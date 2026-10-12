@@ -4,6 +4,8 @@ import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from src.dashboard.churn_intelligence import render_churn_intelligence
+from src.dashboard.business_kpis import render_business_kpis
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
@@ -150,6 +152,9 @@ try:
     st.caption(
         f"Showing up to 500 of {len(filtered):,} matching customers."
     )
+
+    render_business_kpis(get_engine(DATABASE_URL))
+    render_churn_intelligence(get_engine(DATABASE_URL))
 
 except Exception as exc:
     st.error("Unable to load dashboard data from PostgreSQL.")
