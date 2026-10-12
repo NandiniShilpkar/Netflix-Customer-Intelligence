@@ -218,3 +218,51 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project secrets and local environments
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python and temporary files
+__pycache__/
+*.py[cod]
+*.log
+
+# Generated datasets and model artifacts
+data/raw/
+data/processed/
+data/features/
+models/*.joblib
+
+# Keep report summaries, but exclude temporary outputs
+
+# Project secrets and local environments
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python and temporary files
+__pycache__/
+*.py[cod]
+*.log
+
+# Generated datasets and model artifacts
+data/raw/
+data/processed/
+data/features/
+models/*.joblib
+
+# Python cache files
+**/__pycache__/
+*.py[cod]
+
+# Generated data quality reports
+data/reports/
+
+# Local environment files
+.env
+.env.*
+!.env.example

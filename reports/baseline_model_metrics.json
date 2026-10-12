@@ -1,0 +1,47 @@
+{
+  "experiment": "historical_april_2026_churn_baseline",
+  "cutoff_date": "2026-03-31",
+  "outcome_window_end": "2026-04-30",
+  "dataset_rows": 6571,
+  "positive_cases": 218,
+  "negative_cases": 6353,
+  "random_state": 42,
+  "test_size": 0.2,
+  "metrics": {
+    "logistic_regression": {
+      "precision": 0.04336734693877551,
+      "recall": 0.38636363636363635,
+      "f1": 0.0779816513761468,
+      "roc_auc": 0.5765324368786211,
+      "average_precision": 0.052851084260237685,
+      "confusion_matrix": [
+        [
+          896,
+          375
+        ],
+        [
+          27,
+          17
+        ]
+      ]
+    },
+    "random_forest": {
+      "precision": 0.07692307692307693,
+      "recall": 0.13636363636363635,
+      "f1": 0.09836065573770492,
+      "roc_auc": 0.6206101137257707,
+      "average_precision": 0.06357154196936766,
+      "confusion_matrix": [
+        [
+          1199,
+          72
+        ],
+        [
+          38,
+          6
+        ]
+      ]
+    }
+  },
+  "caveat": "Exploratory evaluation only. The observation window for negative labels has not been independently verified."
+}
