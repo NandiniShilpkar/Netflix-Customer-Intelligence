@@ -17,6 +17,90 @@ st.set_page_config(
     layout="wide",
 )
 
+# --------------------------------------------------
+# Netflix-inspired dashboard theme
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+    :root {
+        --netflix-red: #E50914;
+        --netflix-black: #141414;
+        --netflix-panel: #222222;
+        --netflix-muted: #B3B3B3;
+    }
+
+    .stApp {
+        background-color: var(--netflix-black);
+        color: #FFFFFF;
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(20, 20, 20, 0.95);
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #080808;
+        border-right: 1px solid #303030;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #FFFFFF;
+    }
+
+    h1, h2, h3 {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
+    [data-testid="stMetric"] {
+        background: var(--netflix-panel);
+        border: 1px solid #353535;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: var(--netflix-muted) !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+    }
+
+    .stButton > button,
+    .stDownloadButton > button {
+        background-color: var(--netflix-red);
+        color: #FFFFFF;
+        border: 1px solid var(--netflix-red);
+        border-radius: 7px;
+        font-weight: 600;
+        transition: background-color 0.2s ease;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        background-color: #B20710;
+        color: #FFFFFF;
+        border-color: #B20710;
+    }
+
+    [data-testid="stDataFrame"] {
+        border: 1px solid #353535;
+        border-radius: 8px;
+    }
+
+    hr {
+        border-color: #353535;
+    }
+
+    .stCaption {
+        color: var(--netflix-muted);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
 st.title("🎬 Netflix Customer Intelligence")
 st.caption("Customer analytics • Subscription insights • Churn intelligence")
 

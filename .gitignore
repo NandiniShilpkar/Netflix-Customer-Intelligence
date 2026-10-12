@@ -266,3 +266,5 @@ data/reports/
 .env
 .env.*
 !.env.example
+src/features/build_churn_features.py.bak
+src/dashboard/churn_intelligence.py.bak

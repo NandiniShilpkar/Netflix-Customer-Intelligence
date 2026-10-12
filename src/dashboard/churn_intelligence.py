@@ -1,17 +1,22 @@
 
 from pathlib import Path
+import shap
+
+
+import plotly.express as px
 
 import joblib
+import numpy as np
 import pandas as pd
 import streamlit as st
 from sqlalchemy import text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = PROJECT_ROOT / "models" / "random_forest.joblib"
+MODEL_PATH = PROJECT_ROOT / "models" / "historical_random_forest.joblib"
 
-CUTOFF_DATE = "2026-03-31"
-VIEWING_WINDOW_START = "2025-12-31"
+CUTOFF_DATE = "2026-05-31"
+VIEWING_WINDOW_START = "2026-03-02"
 
 
 @st.cache_resource
@@ -73,9 +78,9 @@ def build_current_customer_features(engine):
             COUNT(DISTINCT viewing_date) AS active_viewing_days_90d,
             COALESCE(SUM(watch_duration_minutes), 0)
                 AS total_watch_minutes_90d,
-            COALESCE(AVG(watch_duration_minutes), 0)
+            AVG(watch_duration_minutes)
                 AS avg_watch_minutes_90d,
-            COALESCE(AVG(completion_percentage), 0)
+            AVG(completion_percentage)
                 AS avg_completion_pct_90d,
             MAX(viewing_date) AS last_viewing_date
         FROM viewing_activity
@@ -98,15 +103,13 @@ def build_current_customer_features(engine):
         viewing, on="customer_id", how="left"
     )
 
-    viewing_numeric = [
+    viewing_count_numeric = [
         "viewing_sessions_90d",
         "active_viewing_days_90d",
         "total_watch_minutes_90d",
-        "avg_watch_minutes_90d",
-        "avg_completion_pct_90d",
     ]
-    features[viewing_numeric] = (
-        features[viewing_numeric].fillna(0)
+    features[viewing_count_numeric] = (
+        features[viewing_count_numeric].fillna(0)
     )
 
     features["days_since_last_viewing"] = (
@@ -124,7 +127,7 @@ def build_current_customer_features(engine):
             COUNT(*) FILTER (
                 WHERE payment_status = 'Success'
             ) AS successful_payment_count,
-            COALESCE(AVG(amount), 0) AS avg_payment_amount
+            AVG(amount) AS avg_payment_amount
         FROM payments
         WHERE payment_date <= CAST(:cutoff AS DATE)
         GROUP BY customer_id
@@ -141,14 +144,13 @@ def build_current_customer_features(engine):
         payments, on="customer_id", how="left"
     )
 
-    payment_numeric = [
+    payment_count_numeric = [
         "payment_count",
         "failed_payment_count",
         "successful_payment_count",
-        "avg_payment_amount",
     ]
-    features[payment_numeric] = (
-        features[payment_numeric].fillna(0)
+    features[payment_count_numeric] = (
+        features[payment_count_numeric].fillna(0)
     )
 
     features["failed_payment_rate"] = (
@@ -258,11 +260,18 @@ def score_customers(engine):
 
 def render_churn_intelligence(engine):
     """Display experimental churn scoring in Streamlit."""
+
     st.header("AI Churn Intelligence")
+    render_feature_importance()
     st.caption(
-        "Experimental scores from a baseline Random Forest model. "
-        "These are not validated individual churn probabilities."
+        "Experimental churn scores from a historical Random Forest model "
+        "trained on earlier customer snapshots and evaluated on May 2026 data. "
+        "Predictive performance is limited, and the scores are not calibrated "
+        "or validated individual churn probabilities. Use them for exploration, "
+        "not as definitive predictions about individual customers."
     )
+
+    explain_customer(engine)
 
     if not st.button("Calculate experimental churn risk"):
         st.info(
@@ -315,5 +324,161 @@ def render_churn_intelligence(engine):
         st.error("Unable to calculate churn risk.")
         st.caption(
             "Check the model file, database connection, and feature schema."
+        )
+        # explain_customer(engine)
+        st.exception(exc)
+
+
+
+def render_feature_importance():
+    """Display global Random Forest feature importance."""
+    st.subheader("What influences the model's decisions?")
+
+    try:
+        model = load_churn_model()
+        classifier = model.named_steps["classifier"]
+        preprocessor = model.named_steps["preprocessor"]
+
+        importance_df = pd.DataFrame({
+            "Feature": preprocessor.get_feature_names_out(),
+            "Importance": classifier.feature_importances_,
+        })
+
+        importance_df["Feature"] = (
+            importance_df["Feature"]
+            .str.replace("numeric__", "", regex=False)
+            .str.replace("categorical__", "", regex=False)
+        )
+
+        importance_df = importance_df.nlargest(
+            15, "Importance"
+        ).sort_values("Importance")
+
+        fig = px.bar(
+            importance_df,
+            x="Importance",
+            y="Feature",
+            orientation="h",
+            title="Top 15 Global Feature Importances",
+            labels={
+                "Importance": "Relative importance",
+                "Feature": "",
+            },
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption(
+            "Global feature importance describes the model as a whole. "
+            "It does not explain an individual customer's score or prove causation."
+        )
+
+    except Exception as exc:
+        st.error("Unable to display feature importance.")
+        st.exception(exc)
+
+
+def explain_customer(engine):
+    """Explain one customer's experimental Random Forest score."""
+    st.subheader("Individual Customer Explanation")
+
+    try:
+        model = load_churn_model()
+        features = build_current_customer_features(engine)
+
+        if features.empty:
+            st.warning("No eligible customers found.")
+            return
+
+        customer_ids = features["customer_id"].astype(str)
+        selected_id = st.selectbox(
+            "Select a customer",
+            customer_ids.tolist(),
+            key="shap_customer_id",
+        )
+
+        selected_index = customer_ids[
+            customer_ids == selected_id
+        ].index[0]
+
+        customer_features = features.loc[[selected_index]].drop(
+            columns=["customer_id"]
+        )
+
+        model_probability = float(
+            model.predict_proba(customer_features)[0, 1]
+        )
+
+        st.metric(
+            "Experimental churn-risk score",
+            f"{model_probability:.1%}",
+        )
+
+        preprocessor = model.named_steps["preprocessor"]
+        classifier = model.named_steps["classifier"]
+
+        transformed = preprocessor.transform(customer_features)
+
+        if hasattr(transformed, "toarray"):
+            transformed = transformed.toarray()
+
+        transformed = np.asarray(transformed, dtype=np.float64)
+        feature_names = preprocessor.get_feature_names_out()
+
+        # TreeExplainer explains the fitted forest on the
+        # preprocessed feature representation.
+        explainer = shap.TreeExplainer(classifier)
+        shap_values = explainer.shap_values(transformed)
+
+        if isinstance(shap_values, list):
+            customer_shap = shap_values[1][0]
+        elif getattr(shap_values, "ndim", 0) == 3:
+            customer_shap = shap_values[0, :, 1]
+        else:
+            customer_shap = shap_values[0]
+
+        explanation = pd.DataFrame({
+            "Feature": feature_names,
+            "SHAP value": customer_shap,
+        })
+
+        explanation["Feature"] = (
+            explanation["Feature"]
+            .str.replace("numeric__", "", regex=False)
+            .str.replace("categorical__", "", regex=False)
+        )
+
+        explanation["Absolute impact"] = (
+            explanation["SHAP value"].abs()
+        )
+
+        explanation = explanation.nlargest(
+            12, "Absolute impact"
+        ).sort_values("SHAP value")
+
+        fig = px.bar(
+            explanation,
+            x="SHAP value",
+            y="Feature",
+            orientation="h",
+            color="SHAP value",
+            color_continuous_scale="RdBu",
+            title="Features pushing the model score up or down",
+            labels={"SHAP value": "Contribution to model output"},
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.caption(
+            "SHAP values explain contributions on the model's output scale. "
+            "For a classifier, they may represent class-output contributions "
+            "rather than percentage-point changes in churn probability. "
+            "They are not proof of causation."
+        )
+
+    except Exception as exc:
+        st.error("Unable to explain this customer's model score.")
+        st.caption(
+            "The explanation method may need adjustment for the installed "
+            "SHAP version or model output format."
         )
         st.exception(exc)
