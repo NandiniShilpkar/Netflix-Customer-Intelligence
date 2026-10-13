@@ -1,0 +1,72 @@
+{
+  "cutoff_date": "2026-06-30",
+  "customers_segmented": 8000,
+  "selected_k": 2,
+  "selection_rule": "Highest silhouette score among tested k values",
+  "random_state": 42,
+  "feature_columns": [
+    "age",
+    "country",
+    "gender",
+    "acquisition_channel",
+    "plan_id",
+    "monthly_price",
+    "auto_renew",
+    "subscription_tenure_days",
+    "viewing_sessions_90d",
+    "total_watch_minutes_90d",
+    "avg_completion_pct_90d",
+    "payment_count",
+    "failed_payment_count",
+    "avg_payment_amount",
+    "failed_payment_rate",
+    "support_ticket_count",
+    "unresolved_ticket_count",
+    "avg_support_satisfaction",
+    "avg_feedback_rating"
+  ],
+  "evaluation": [
+    {
+      "k": 2,
+      "inertia": 128147.7104374158,
+      "silhouette_score": 0.11280975886147922,
+      "smallest_cluster_size": 3373
+    },
+    {
+      "k": 3,
+      "inertia": 118555.91785166886,
+      "silhouette_score": 0.11211497097293384,
+      "smallest_cluster_size": 1150
+    },
+    {
+      "k": 4,
+      "inertia": 112664.78731444619,
+      "silhouette_score": 0.10813632093574256,
+      "smallest_cluster_size": 987
+    },
+    {
+      "k": 5,
+      "inertia": 107592.43717230501,
+      "silhouette_score": 0.09520305462597677,
+      "smallest_cluster_size": 861
+    },
+    {
+      "k": 6,
+      "inertia": 103128.02084149855,
+      "silhouette_score": 0.10328763549533584,
+      "smallest_cluster_size": 667
+    },
+    {
+      "k": 7,
+      "inertia": 99569.61317491552,
+      "silhouette_score": 0.08815977220049372,
+      "smallest_cluster_size": 570
+    }
+  ],
+  "caveats": [
+    "Cluster IDs are arbitrary labels, not ordered value tiers.",
+    "K-Means finds statistical groupings, not causal customer types.",
+    "Review cluster sizes and profiles before assigning business names.",
+    "This model describes the selected cutoff snapshot."
+  ]
+}

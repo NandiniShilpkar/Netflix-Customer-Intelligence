@@ -268,3 +268,8 @@ data/reports/
 !.env.example
 src/features/build_churn_features.py.bak
 src/dashboard/churn_intelligence.py.bak
+# Local segmentation backups
+backups/
+
+# Local segmentation experiment outputs
+reports/segmentation_experiment/
