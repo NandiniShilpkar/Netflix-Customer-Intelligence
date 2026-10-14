@@ -91,11 +91,24 @@ def render_business_kpis(engine):
             .rename_axis("Status")
             .reset_index(name="Records")
         )
-        st.plotly_chart(
-            px.bar(payment_counts, x="Status", y="Records",
-                   title="Payment status distribution"),
-            use_container_width=True,
+
+        fig = px.bar(
+            payment_counts,
+            x="Status",
+            y="Records",
+            title="Payment status distribution",
+            template="plotly_dark",
+            color_discrete_sequence=["#E50914"],
         )
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            title_font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
 
     # Viewing activity
     st.subheader("Viewing Activity")
@@ -117,6 +130,8 @@ def render_business_kpis(engine):
     )
 
     if not viewing.empty:
+
+
         devices = (
             viewing["device_type"]
             .fillna("Unknown")
@@ -124,11 +139,37 @@ def render_business_kpis(engine):
             .rename_axis("Device")
             .reset_index(name="Viewing records")
         )
-        st.plotly_chart(
-            px.bar(devices, x="Device", y="Viewing records",
-                   title="Viewing records by device"),
-            use_container_width=True,
+
+
+        fig = px.bar(
+            devices,
+            x="Device",
+            y="Viewing records",
+            title="Viewing records by device",
+            template="plotly_dark",
+            color_discrete_sequence=["#E50914"],
         )
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # devices = (
+        #     viewing["device_type"]
+        #     .fillna("Unknown")
+        #     .value_counts()
+        #     .rename_axis("Device")
+        #     .reset_index(name="Viewing records")
+        # )
+        # st.plotly_chart(
+        #     px.bar(devices, x="Device", y="Viewing records",
+        #            title="Viewing records by device"),
+        #     use_container_width=True,
+        # )
 
     # Customer support
     st.subheader("Customer Support")
@@ -153,6 +194,7 @@ def render_business_kpis(engine):
     )
 
     if not support.empty:
+
         categories = (
             support["issue_category"]
             .fillna("Unknown")
@@ -160,11 +202,36 @@ def render_business_kpis(engine):
             .rename_axis("Issue category")
             .reset_index(name="Tickets")
         )
-        st.plotly_chart(
-            px.bar(categories, x="Issue category", y="Tickets",
-                   title="Tickets by issue category"),
-            use_container_width=True,
+
+
+        fig = px.bar(
+            categories,
+            x="Issue category",
+            y="Tickets",
+            title="Tickets by issue category",
+            template="plotly_dark",
+            color_discrete_sequence=["#E50914"],
         )
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # categories = (
+        #     support["issue_category"]
+        #     .fillna("Unknown")
+        #     .value_counts()
+        #     .rename_axis("Issue category")
+        #     .reset_index(name="Tickets")
+        # )
+        # st.plotly_chart(
+        #     px.bar(categories, x="Issue category", y="Tickets",
+        #            title="Tickets by issue category"),
+        #     use_container_width=True,
+        # )
 
     # Subscriptions
     st.subheader("Subscription Plans")
@@ -178,11 +245,24 @@ def render_business_kpis(engine):
             .rename_axis("Plan")
             .reset_index(name="Subscriptions")
         )
-        st.plotly_chart(
-            px.bar(plan_counts, x="Plan", y="Subscriptions",
-                   title="Subscription records by plan"),
-            use_container_width=True,
+
+        fig = px.bar(
+            plan_counts,
+            x="Plan",
+            y="Subscriptions",
+            title="Subscription records by plan",
+            template="plotly_dark",
+            color_discrete_sequence=["#E50914"],
         )
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            title_font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
 
         avg_price = pd.to_numeric(
             subscriptions["monthly_price"], errors="coerce"

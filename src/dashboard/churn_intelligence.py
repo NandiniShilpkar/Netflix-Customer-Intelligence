@@ -354,6 +354,7 @@ def render_feature_importance():
             15, "Importance"
         ).sort_values("Importance")
 
+
         fig = px.bar(
             importance_df,
             x="Importance",
@@ -364,9 +365,18 @@ def render_feature_importance():
                 "Importance": "Relative importance",
                 "Feature": "",
             },
+            template="plotly_dark",
+            color_discrete_sequence=["#E50914"],
         )
-
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            title_font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
         st.plotly_chart(fig, use_container_width=True)
+
         st.caption(
             "Global feature importance describes the model as a whole. "
             "It does not explain an individual customer's score or prove causation."
@@ -455,18 +465,31 @@ def explain_customer(engine):
             12, "Absolute impact"
         ).sort_values("SHAP value")
 
+
         fig = px.bar(
             explanation,
             x="SHAP value",
             y="Feature",
             orientation="h",
             color="SHAP value",
-            color_continuous_scale="RdBu",
+            color_continuous_scale=[
+                [0, "#777777"],
+                [0.5, "#241012"],
+                [1, "#E50914"],
+            ],
             title="Features pushing the model score up or down",
             labels={"SHAP value": "Contribution to model output"},
+            template="plotly_dark",
         )
-
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(12,8,9,0.95)",
+            font=dict(color="#F5F5F1"),
+            title_font=dict(color="#F5F5F1"),
+            margin=dict(l=20, r=20, t=55, b=20),
+        )
         st.plotly_chart(fig, use_container_width=True)
+
 
         st.caption(
             "SHAP values explain contributions on the model's output scale. "
