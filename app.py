@@ -1,535 +1,1710 @@
 
 import os
 
+
+
 import pandas as pd
+
 import plotly.express as px
+
+import plotly.io as pio
+
 import streamlit as st
-from src.dashboard.churn_intelligence import render_churn_intelligence
-from src.dashboard.business_kpis import render_business_kpis
-from src.dashboard.customer_segmentation import render_customer_segmentation
+
 from dotenv import load_dotenv
+
 from sqlalchemy import create_engine, text
 
 
-# Netflix Cherry theme for all Plotly charts
+
+from src.dashboard.business_kpis import render_business_kpis
+
+from src.dashboard.churn_intelligence import render_churn_intelligence
+
+from src.dashboard.customer_segmentation import render_customer_segmentation
+
+
+
+
+
+# --------------------------------------------------
+
+# Configuration
+
+# --------------------------------------------------
+
+
+
+load_dotenv()
+
+
+
+st.set_page_config(
+
+    page_title="Netflix Customer Intelligence",
+
+    page_icon="🎬",
+
+    layout="wide",
+
+    initial_sidebar_state="expanded",
+
+)
+
+
+
+NETFLIX_RED = "#E50914"
+
+NETFLIX_DARK_RED = "#B20710"
+
+NETFLIX_WHITE = "#F5F5F1"
+
+NETFLIX_MUTED = "#B3B3B3"
+
+
+
 px.defaults.template = "plotly_dark"
+
 px.defaults.color_discrete_sequence = [
-    "#E50914",  # Netflix red
-    "#B20710",  # Cherry red
-    "#F5F5F1",  # Off-white
-    "#8B1E2D",  # Deep cherry
-    "#777777",  # Grey
-]
-px.defaults.color_continuous_scale = [
-    "#241012",
+
+    NETFLIX_RED,
+
+    NETFLIX_DARK_RED,
+
+    NETFLIX_WHITE,
+
     "#8B1E2D",
-    "#B20710",
-    "#E50914",
+
+    "#777777",
+
 ]
 
-# Force dark styling on charts created with Plotly Express
-import plotly.io as pio
+px.defaults.color_continuous_scale = [
+
+    "#241012",
+
+    "#8B1E2D",
+
+    NETFLIX_DARK_RED,
+
+    NETFLIX_RED,
+
+]
+
+
 
 pio.templates["netflix_dark"] = pio.templates["plotly_dark"]
+
 pio.templates.default = "netflix_dark"
 
 px.defaults.template = "netflix_dark"
 
 
 
-load_dotenv()
-
-st.set_page_config(
-    page_title="Netflix Customer Intelligence",
-    page_icon="🎬",
-    layout="wide",
-)
-
-# Netflix-style brand header
-st.markdown("""
-<style>
-.netflix-brand {
-    text-align: center;
-    padding: 8px 0 22px;
-    border-bottom: 1px solid #461216;
-    margin-bottom: 24px;
-}
-.netflix-logo {
-    color: #E50914;
-    font-family: Impact, "Arial Narrow", sans-serif;
-    font-size: clamp(38px, 5vw, 66px);
-    font-weight: 900;
-    letter-spacing: 3px;
-    line-height: 1.1;
-}
-.netflix-subtitle {
-    color: #F5F5F1;
-    font-size: clamp(23px, 3vw, 38px);
-    font-weight: 750;
-    margin-top: 5px;
-}
-.netflix-tagline {
-    color: #999;
-    font-size: 12px;
-    letter-spacing: 3px;
-    margin-top: 10px;
-}
-</style>
-
-<div class="netflix-brand">
-    <div class="netflix-logo">NETFLIX</div>
-    <div class="netflix-subtitle">Customer Intelligence</div>
-    <div class="netflix-tagline">
-        DATA-DRIVEN INSIGHTS FOR A SMARTER STREAMING BUSINESS
-    </div>
-</div>
-""", unsafe_allow_html=True)
 
 
 # --------------------------------------------------
-# Netflix-inspired dashboard theme
+
+# Netflix-inspired styling
+
 # --------------------------------------------------
 
-st.markdown("""
-<style>
+
+
+st.markdown(
+
+    """
+
+    <style>
+
     :root {
+
         --netflix-red: #E50914;
-        --netflix-black: #141414;
-        --netflix-panel: #222222;
+
+        --netflix-dark-red: #B20710;
+
+        --netflix-black: #080808;
+
+        --netflix-panel: rgba(18, 12, 13, 0.94);
+
+        --netflix-border: rgba(229, 9, 20, 0.38);
+
         --netflix-muted: #B3B3B3;
+
     }
+
+
 
     .stApp {
+
         background-color: var(--netflix-black);
+
+        background-image:
+
+            linear-gradient(
+
+                rgba(0, 0, 0, 0.80),
+
+                rgba(0, 0, 0, 0.94)
+
+            ),
+
+            url("assets/netflix-hero-image.avif");
+
+        background-size: cover;
+
+        background-position: center top;
+
+        background-repeat: no-repeat;
+
+        background-attachment: fixed;
+
         color: #FFFFFF;
+
     }
+
+
+
+    [data-testid="stAppViewContainer"],
+
+    [data-testid="stMain"],
+
+    [data-testid="stMainBlockContainer"] {
+
+        background: transparent;
+
+    }
+
+
 
     [data-testid="stHeader"] {
-        background: rgba(20, 20, 20, 0.95);
+
+        background: rgba(8, 8, 8, 0.88);
+
     }
+
+
+
+    [data-testid="stMainBlockContainer"] {
+
+        padding-top: 1.5rem;
+
+        padding-bottom: 3rem;
+
+    }
+
+
+
+    /* Brand header */
+
+    .netflix-brand {
+
+        text-align: center;
+
+        padding: 12px 0 26px;
+
+        margin-bottom: 26px;
+
+        border-bottom: 1px solid #492024;
+
+    }
+
+
+
+    .netflix-logo {
+
+        color: var(--netflix-red);
+
+        font-family: Impact, "Arial Narrow", sans-serif;
+
+        font-size: clamp(40px, 6vw, 68px);
+
+        font-weight: 900;
+
+        letter-spacing: 4px;
+
+        line-height: 1.1;
+
+        text-shadow: 0 4px 24px rgba(229, 9, 20, 0.20);
+
+    }
+
+
+
+    .netflix-subtitle {
+
+        color: #FFFFFF;
+
+        font-size: clamp(23px, 3vw, 36px);
+
+        font-weight: 750;
+
+        margin-top: 8px;
+
+    }
+
+
+
+    .netflix-tagline {
+
+        color: var(--netflix-muted);
+
+        font-size: 11px;
+
+        letter-spacing: 2px;
+
+        margin-top: 12px;
+
+    }
+
+
+
+    /* Sidebar */
 
     [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #100607 0%, #080808 100%);
-    border-right: 1px solid #7F1D2D;
-}
 
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    color: #F5F5F1;
-}
+        background: linear-gradient(
 
-[data-testid="stSidebar"] hr {
-    border-color: #492024;
-}
+            180deg,
 
-[data-testid="stMetric"] {
-    background: linear-gradient(145deg, #2A171A, #101010);
-    border: 1px solid #7F1D2D;
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 4px 14px rgba(229, 9, 20, 0.12);
-}
+            #16090B 0%,
 
-[data-testid="stMetricValue"] {
-    color: #E50914 !important;
-    font-weight: 800 !important;
-}
+            #0A0A0A 55%,
 
-    [data-testid="stSidebar"] * {
-        color: #FFFFFF;
+            #080808 100%
+
+        );
+
+        border-right: 1px solid #492024;
+
     }
+
+
+
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+
+        color: var(--netflix-white);
+
+    }
+
+
+
+    [data-testid="stSidebar"] hr {
+
+        border-color: #492024;
+
+    }
+
+
+
+    [data-testid="stSidebar"] .stButton > button {
+
+        width: 100%;
+
+        min-height: 44px;
+
+        text-align: left;
+
+        border-radius: 9px;
+
+        font-weight: 600;
+
+        transition: all 0.2s ease;
+
+    }
+
+
+
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {
+
+        background: var(--netflix-dark-red);
+
+        color: #FFFFFF;
+
+        border: 1px solid var(--netflix-red);
+
+        box-shadow: 0 4px 14px rgba(229, 9, 20, 0.18);
+
+    }
+
+
+
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+
+        background: rgba(255, 255, 255, 0.025);
+
+        color: #FFFFFF;
+
+        border: 1px solid transparent;
+
+    }
+
+
+
+    [data-testid="stSidebar"] .stButton > button:hover {
+
+        background: #3A1115;
+
+        border-color: var(--netflix-red);
+
+        color: #FFFFFF;
+
+    }
+
+
+
+    /* Headings and text */
 
     h1, h2, h3 {
+
         color: #FFFFFF !important;
+
         font-weight: 700 !important;
+
     }
 
-    [data-testid="stMetric"] {
-        background: var(--netflix-panel);
-        border: 1px solid #353535;
-        border-radius: 12px;
-        padding: 18px;
+
+
+    h2 {
+
+        padding-bottom: 5px;
+
     }
 
-    [data-testid="stMetricLabel"] {
-        color: var(--netflix-muted) !important;
-    }
 
-    [data-testid="stMetricValue"] {
-        color: #FFFFFF !important;
-    }
 
-    .stButton > button,
-    .stDownloadButton > button {
-        background-color: var(--netflix-red);
-        color: #FFFFFF;
-        border: 1px solid var(--netflix-red);
-        border-radius: 7px;
-        font-weight: 600;
-        transition: background-color 0.2s ease;
-    }
-
-    .stButton > button:hover,
-    .stDownloadButton > button:hover {
-        background-color: #B20710;
-        color: #FFFFFF;
-        border-color: #B20710;
-    }
-
-    [data-testid="stDataFrame"] {
-        border: 1px solid #353535;
-        border-radius: 8px;
-    }
-
-    hr {
-        border-color: #353535;
-    }
+    [data-testid="stCaptionContainer"],
 
     .stCaption {
+
         color: var(--netflix-muted);
+
     }
 
-/* Netflix-style dashboard boards */
-[data-testid="stPlotlyChart"] {
-    background: linear-gradient(145deg, #201719, #111111);
-    border: 1px solid #492024;
-    border-radius: 14px;
-    padding: 10px;
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.3);
-}
 
-/* KPI and metric boards */
-[data-testid="stMetric"] {
-    background: linear-gradient(145deg, #2A171A, #151515);
-    border: 1px solid #7F1D2D;
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 4px 14px rgba(229, 9, 20, 0.08);
-}
 
-/* Expandable dashboard panels */
-[data-testid="stExpander"] {
-    background: #181313;
-    border: 1px solid #492024;
-    border-radius: 12px;
-}
+    /* KPI cards */
 
-/* Tables and data boards */
-[data-testid="stDataFrame"] {
-    border: 1px solid #492024;
-    border-radius: 12px;
-    overflow: hidden;
-}
+    [data-testid="stMetric"] {
 
-/* Tabs */
-button[data-baseweb="tab"] {
-    color: #B3B3B3;
-}
+        background: linear-gradient(
 
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #E50914;
-    border-bottom-color: #E50914;
-}
+            145deg,
 
-/* Fixed Netflix collage background across the entire app */
-.stApp {
-    background-color: #080808;
-    background-image:
-        linear-gradient(
-            rgba(0, 0, 0, 0.68),
-            rgba(0, 0, 0, 0.84)
-        ),
-        url("assets/netflix-hero-image.avif");
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-}
+            rgba(47, 20, 24, 0.96),
 
-/* Keep the page transparent so the background remains visible */
-[data-testid="stAppViewContainer"],
-[data-testid="stMain"],
-[data-testid="stMainBlockContainer"] {
+            rgba(15, 12, 12, 0.96)
+
+        );
+
+        border: 1px solid var(--netflix-border);
+
+        border-radius: 14px;
+
+        padding: 18px 20px;
+
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+
+        transition: border-color 0.2s ease;
+
+    }
+
+
+
+    [data-testid="stMetric"]:hover {
+
+        border-color: var(--netflix-red);
+
+    }
+
+
+
+    [data-testid="stMetricLabel"] {
+
+        color: var(--netflix-muted) !important;
+
+    }
+
+
+
+    [data-testid="stMetricValue"] {
+
+        color: var(--netflix-red) !important;
+
+        font-weight: 800 !important;
+
+    }
+
+
+
+    [data-testid="stMetricDelta"] {
+
+        color: var(--netflix-white);
+
+    }
+
+
+
+    /* Chart panels */
+
+    [data-testid="stPlotlyChart"] {
+
+        background: var(--netflix-panel);
+
+        border: 1px solid var(--netflix-border);
+
+        border-radius: 14px;
+
+        padding: 8px;
+
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+
+    }
+
+
+
+    /* Data tables */
+
+    [data-testid="stDataFrame"] {
+
+        border: 1px solid var(--netflix-border);
+
+        border-radius: 12px;
+
+        overflow: hidden;
+
+    }
+
+
+
+    /* Expanders */
+
+    [data-testid="stExpander"] {
+
+        background: rgba(18, 12, 13, 0.90);
+
+        border: 1px solid var(--netflix-border);
+
+        border-radius: 12px;
+
+    }
+
+
+
+    /* Buttons */
+
+    .stButton > button,
+
+    .stDownloadButton > button {
+
+        border-radius: 8px;
+
+        font-weight: 600;
+
+        transition: all 0.2s ease;
+
+    }
+
+
+
+    .stButton > button[kind="primary"],
+
+    .stDownloadButton > button {
+
+        background: var(--netflix-red);
+
+        color: #FFFFFF;
+
+        border: 1px solid var(--netflix-red);
+
+    }
+
+
+
+    .stButton > button[kind="primary"]:hover,
+
+    .stDownloadButton > button:hover {
+
+        background: var(--netflix-dark-red);
+
+        border-color: var(--netflix-dark-red);
+
+        color: #FFFFFF;
+
+    }
+
+
+
+    /* Inputs */
+
+    [data-baseweb="select"] > div,
+
+    [data-baseweb="input"] > div {
+
+        border-radius: 8px;
+
+    }
+
+
+
+    /* Tabs */
+
+    button[data-baseweb="tab"] {
+
+        color: var(--netflix-muted);
+
+    }
+
+
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+
+        color: var(--netflix-red);
+
+        border-bottom-color: var(--netflix-red);
+
+    }
+
+
+
+    hr {
+
+        border-color: #353535;
+
+    }
+
+
+
+    /* Alerts */
+
+    [data-testid="stAlert"] {
+
+        border-radius: 10px;
+
+    }
+
+
+
+    /* Responsive spacing */
+
+    @media (max-width: 768px) {
+
+        [data-testid="stMainBlockContainer"] {
+
+            padding: 1rem 1rem 2rem;
+
+        }
+
+
+
+        .netflix-brand {
+
+            padding-bottom: 18px;
+
+        }
+
+
+
+        .netflix-tagline {
+
+            font-size: 9px;
+
+            letter-spacing: 1px;
+
+        }
+
+    }
+
+
+
+# /* White button with hidden text until hover */
+
+# .stApp [data-testid="stBaseButton-secondary"] {
+
+#     background: #FFFFFF !important;
+
+#     color: #FFFFFF !important;
+
+#     border: 1px solid #FFFFFF !important;
+
+#     transition: all 0.2s ease;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"] p,
+
+# .stApp [data-testid="stBaseButton-secondary"] span {
+
+#     color: #FFFFFF !important;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"]:hover {
+
+#     background: #E50914 !important;
+
+#     color: #FFFFFF !important;
+
+#     border-color: #E50914 !important;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"]:hover p,
+
+# .stApp [data-testid="stBaseButton-secondary"]:hover span {
+
+#     color: #FFFFFF !important;
+
+# }
+
+
+
+
+
+# /* Strong override for Streamlit buttons */
+
+# .stApp button,
+
+# .stApp button p,
+
+# .stApp button span {
+
+#     color: #FFFFFF !important;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"],
+
+# .stApp [data-testid="stBaseButton-primary"] {
+
+#     background: #E50914 !important;
+
+#     color: #FFFFFF !important;
+
+#     border: 1px solid #E50914 !important;
+
+#     opacity: 1 !important;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"]:hover,
+
+# .stApp [data-testid="stBaseButton-primary"]:hover {
+
+#     background: #B20710 !important;
+
+#     color: #FFFFFF !important;
+
+#     border-color: #B20710 !important;
+
+# }
+
+
+
+# .stApp [data-testid="stBaseButton-secondary"] p,
+
+# .stApp [data-testid="stBaseButton-primary"] p {
+
+#     color: #FFFFFF !important;
+
+# }
+
+
+
+
+
+    # /* Fix experimental churn risk button */
+
+    #     .stButton > button {
+
+    #         background-color: #E50914 !important;
+
+    #         color: #FFFFFF !important;
+
+    #         border: 1px solid #E50914 !important;
+
+    #         border-radius: 8px !important;
+
+    #         font-weight: 700 !important;
+
+    #         opacity: 1 !important;
+
+    #     }
+
+
+
+    #     .stButton > button:hover {
+
+    #         background-color: #B20710 !important;
+
+    #         color: #FFFFFF !important;
+
+    #         border-color: #B20710 !important;
+
+    #     }
+
+
+
+    #     .stButton > button p,
+
+    #     .stButton > button span {
+
+    #         color: #FFFFFF !important;
+
+    #     }
+
+
+
+/* Only the experimental churn risk button */
+
+.stApp [class*="st-key-calculate_experimental_churn_risk"]
+
+[data-testid="stBaseButton-secondary"] {
+
     background: transparent !important;
-}
 
-/* Dark, translucent analytics boards */
-[data-testid="stMetric"],
-[data-testid="stPlotlyChart"],
-[data-testid="stDataFrame"],
-[data-testid="stExpander"] {
-    background-color: rgba(12, 8, 9, 0.90);
-    border: 1px solid rgba(229, 9, 20, 0.55);
-    border-radius: 14px;
-}
+    color: #FFFFFF !important;
 
-/* Keep the sidebar dark and readable */
-[data-testid="stSidebar"] {
-    background: rgba(8, 8, 8, 0.96);
-    border-right: 1px solid #7F1D2D;
+    border: 1px solid transparent !important;
+
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+
 }
 
 
-</style>
-""", unsafe_allow_html=True)
+
+.stApp [class*="st-key-calculate_experimental_churn_risk"]
+
+[data-testid="stBaseButton-secondary"]:hover {
+
+    background: #B20710 !important;
+
+    color: #FFFFFF !important;
+
+    border-color: #E50914 !important;
+
+}
 
 
-# st.title("🎬 Netflix Customer Intelligence")
-# st.caption("Customer analytics • Subscription insights • Churn intelligence")
 
-# Netflix-style sidebar navigation
-st.sidebar.markdown(
+.stApp [class*="st-key-calculate_experimental_churn_risk"]
+
+[data-testid="stBaseButton-secondary"] p {
+
+    color: #FFFFFF !important;
+
+}
+    </style>
+
+    """,
+    unsafe_allow_html=True,
+
+)
+
+
+
+
+
+# --------------------------------------------------
+
+# Header
+
+# --------------------------------------------------
+
+
+
+st.markdown(
     """
-    <div style="text-align:center; padding:10px 0 24px;">
-        <div style="
-            color:#E50914;
-            font-family:Impact, 'Arial Narrow', sans-serif;
-            font-size:32px;
-            font-weight:900;
-            letter-spacing:2px;">
-            NETFLIX
+    <div class="netflix-brand">
+        <div class="netflix-logo">NETFLIX</div>
+        <div class="netflix-subtitle">Customer Intelligence</div>
+        <div class="netflix-tagline">
+            DATA-DRIVEN INSIGHTS FOR A SMARTER STREAMING BUSINESS
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Netflix-style sidebar navigation without radio buttons
-# st.sidebar.markdown(
-#     """
-#     <div style="
-#         text-align:center;
-#         padding:12px 0 28px;
-#         color:#E50914;
-#         font-family:Impact, 'Arial Narrow', sans-serif;
-#         font-size:32px;
-#         font-weight:900;
-#         letter-spacing:2px;">
-#         NETFLIX
-#     </div>
-#     """,
-#     unsafe_allow_html=True,
-# )
 
-if "dashboard_section" not in st.session_state:
-    st.session_state.dashboard_section = "Dashboard"
+
+
+
+# --------------------------------------------------
+
+# Sidebar navigation
+
+# --------------------------------------------------
+
+
+
+
+
+
+
+
+st.sidebar.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] h1 {
+        color: #E50914 !important;
+        font-family: Impact, "Arial Narrow", sans-serif;
+        letter-spacing: 3px;
+        text-align: center !important;
+        width: 100%;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        width: 100%;
+        text-align: center !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+        width: 100%;
+        text-align: center !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.sidebar.title("NETFLIX")
+
+st.sidebar.caption("ANALYTICS COPILOT")
+
+st.sidebar.divider()
+
+
+
+
+
 
 menu_items = [
+
     ("Dashboard", "🏠"),
+
     ("Business KPIs", "📊"),
+
     ("Churn Intelligence", "👥"),
+
     ("Customer Segmentation", "📈"),
+
 ]
 
+
+
+if "dashboard_section" not in st.session_state:
+
+    st.session_state.dashboard_section = "Dashboard"
+
+
+
 for label, icon in menu_items:
+
     is_active = st.session_state.dashboard_section == label
-    background = "#B20710" if is_active else "transparent"
-    border = "#E50914" if is_active else "transparent"
+
+
 
     if st.sidebar.button(
+
         f"{icon}   {label}",
+
         key=f"nav_{label}",
+
+        type="primary" if is_active else "secondary",
+
         use_container_width=True,
+
     ):
+
         st.session_state.dashboard_section = label
+
         st.rerun()
 
-    st.sidebar.markdown(
-        f"""
-        <style>
-        div[data-testid="stSidebar"] button[kind="secondary"] {{
-            border-radius: 8px;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
-dashboard_section = st.session_state.dashboard_section
-
-# dashboard_section = st.sidebar.radio(
-#     "NAVIGATION",
-#     [
-#         "🏠 Dashboard",
-#         "📊 Business KPIs",
-#         "👥 Churn Intelligence",
-#         "📈 Customer Segmentation",
-#     ],
-#     label_visibility="collapsed",
-# )
 
 st.sidebar.markdown("---")
+
 st.sidebar.caption("CUSTOMER INTELLIGENCE")
+
+st.sidebar.caption("PostgreSQL • Streamlit • AI Analytics")
+
+
+
+
+
+# --------------------------------------------------
+
+# Database helpers
+
+# --------------------------------------------------
+
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
+
+
+
 @st.cache_resource
+
 def get_engine(database_url):
+
     return create_engine(database_url, pool_pre_ping=True)
 
 
+
+
+
 @st.cache_data(ttl=300)
+
 def load_data(query, database_url):
+
     engine = get_engine(database_url)
+
     with engine.connect() as connection:
+
         return pd.read_sql(text(query), connection)
 
 
+
+
+
 if not DATABASE_URL:
+
     st.error(
+
         "DATABASE_URL is missing. Add it to your local .env file "
-        "using your Neon PostgreSQL connection string."
+
+        "using your PostgreSQL connection string."
+
     )
+
     st.stop()
 
+
+
+
+
+# --------------------------------------------------
+
+# Page rendering
+
+# --------------------------------------------------
+
+
+
 try:
-    customers = load_data(
-        """
-        SELECT customer_id, age, country, gender
-        FROM customers
-        """,
-        DATABASE_URL,
-    )
+    dashboard_section = st.session_state.dashboard_section
 
-    labels = load_data(
-        """
-        SELECT customer_id, churned
-        FROM churn_labels
-        """,
-        DATABASE_URL,
-    )
 
-    plans = load_data(
-        """
-        SELECT customer_id, plan_id
-        FROM subscriptions
-        """,
-        DATABASE_URL,
-    )
 
-    customer_data = customers.merge(
-        labels, on="customer_id", how="left"
-    )
-
-    total_customers = customer_data["customer_id"].nunique()
-    churned_customers = customer_data.loc[
-        customer_data["churned"] == True, "customer_id"
-    ].nunique()
-    churn_rate = (
-        churned_customers / total_customers * 100
-        if total_customers
-        else 0
-    )
     if dashboard_section == "Dashboard":
-       col1, col2, col3 = st.columns(3)
-       col1.metric("Total customers", f"{total_customers:,}")
-       col2.metric("Recorded churn", f"{churned_customers:,}")
-       col3.metric("Recorded churn rate", f"{churn_rate:.1f}%")
 
-    st.info(
-        "Recorded churn reflects the dataset's existing labels. "
-        "It is not a live or prospective churn forecast."
-    )
+        # -------------------------------
 
-    left, right = st.columns(2)
+        # Load and prepare customer data
 
-    with left:
-        st.subheader("Customers by country")
-        country_counts = (
+        # -------------------------------
+
+        customers = load_data(
+
+            """
+
+            SELECT customer_id, age, country, gender
+
+            FROM customers
+
+            """,
+
+            DATABASE_URL,
+
+        )
+
+
+
+        labels = load_data(
+
+            """
+
+            SELECT customer_id, churned
+
+            FROM churn_labels
+
+            """,
+
+            DATABASE_URL,
+
+        )
+
+
+
+        customer_data = customers.merge(
+
+            labels,
+
+            on="customer_id",
+
+            how="left",
+
+            validate="one_to_one",
+
+        )
+
+
+
+        total_customers = customer_data["customer_id"].nunique()
+
+
+
+        churned_customers = customer_data.loc[
+
+            customer_data["churned"].eq(True),
+
+            "customer_id",
+
+        ].nunique()
+
+
+
+        churn_rate = (
+
+            churned_customers / total_customers * 100
+
+            if total_customers > 0
+
+            else 0
+
+        )
+
+
+
+        # -------------------------------
+
+        # Dashboard heading
+
+        # -------------------------------
+
+        st.title("Customer Intelligence Dashboard")
+
+        st.caption(
+
+            "Explore customer demographics, historical churn labels, "
+
+            "and customer-level records."
+
+        )
+
+        st.divider()
+
+
+
+        # -------------------------------
+
+        # KPI metrics
+
+        # -------------------------------
+
+        st.subheader("Customer overview")
+
+
+
+        metric1, metric2, metric3 = st.columns(3, gap="medium")
+
+
+
+        with metric1:
+
+            st.metric(
+
+                label="Total customers",
+
+                value=f"{total_customers:,}",
+
+            )
+
+
+
+        with metric2:
+
+            st.metric(
+
+                label="Recorded churn",
+
+                value=f"{churned_customers:,}",
+
+            )
+
+
+
+        with metric3:
+
+            st.metric(
+
+                label="Recorded churn rate",
+
+                value=f"{churn_rate:.1f}%",
+
+            )
+
+
+
+        st.caption(
+
+            "These figures use existing historical churn labels. "
+
+            "They are not predictions of future customer churn."
+
+        )
+
+
+
+        st.divider()
+
+
+
+        # -------------------------------
+
+        # Chart data
+
+        # -------------------------------
+
+        customer_data["country_display"] = (
+
             customer_data["country"]
+
             .fillna("Unknown")
-            .value_counts()
-            .head(10)
-            .rename_axis("Country")
-            .reset_index(name="Customers")
+
+            .astype(str)
+
         )
 
-        fig_country = px.bar(
-            country_counts,
-            x="Country",
-            y="Customers",
-            title="Top 10 countries",
-            template="plotly_dark",
-            color_discrete_sequence=["#E50914"],
-        )
-        fig_country.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(12,8,9,0.95)",
-            font=dict(color="#F5F5F1"),
-            title_font=dict(color="#F5F5F1"),
-            margin=dict(l=20, r=20, t=55, b=20),
-        )
-        st.plotly_chart(fig_country, use_container_width=True)
 
 
-    with right:
-        st.subheader("Recorded churn distribution")
-        churn_counts = (
+        customer_data["churn_status"] = (
+
             customer_data["churned"]
-            .map({True: "Churned", False: "Not recorded as churned"})
+
+            .map({
+
+                True: "Churned",
+
+                False: "Not recorded as churned",
+
+            })
+
             .fillna("Unknown")
-            .value_counts()
-            .rename_axis("Label")
-            .reset_index(name="Customers")
+
         )
 
-        fig_churn = px.pie(
-            churn_counts,
-            names="Label",
-            values="Customers",
-            hole=0.55,
-            template="plotly_dark",
-            color_discrete_sequence=["#E50914", "#777777", "#B20710"],
+
+
+        left, right = st.columns(2, gap="large")
+
+
+
+        # -------------------------------
+
+        # Customers by country
+
+        # -------------------------------
+
+        with left:
+
+            st.subheader("Customer geography")
+
+
+
+            country_counts = (
+
+                customer_data["country_display"]
+
+                .value_counts()
+
+                .head(10)
+
+                .rename_axis("Country")
+
+                .reset_index(name="Customers")
+
+                .sort_values("Customers", ascending=True)
+
+            )
+
+
+
+            fig_country = px.bar(
+
+                country_counts,
+
+                x="Customers",
+
+                y="Country",
+
+                orientation="h",
+
+                title="Top 10 countries by customer count",
+
+                template="netflix_dark",
+
+                color_discrete_sequence=[NETFLIX_RED],
+
+                text="Customers",
+
+            )
+
+
+
+            fig_country.update_traces(
+
+                textposition="outside",
+
+                cliponaxis=False,
+
+                hovertemplate=(
+
+                    "<b>%{y}</b><br>"
+
+                    "Customers: %{x:,}"
+
+                    "<extra></extra>"
+
+                ),
+
+            )
+
+
+
+            fig_country.update_layout(
+
+                paper_bgcolor="rgba(0,0,0,0)",
+
+                plot_bgcolor="rgba(12,8,9,0.95)",
+
+                font=dict(color=NETFLIX_WHITE, size=12),
+
+                title_font=dict(color=NETFLIX_WHITE, size=16),
+
+                margin=dict(l=10, r=35, t=65, b=25),
+
+                xaxis_title="Customers",
+
+                yaxis_title="",
+
+                showlegend=False,
+
+            )
+
+
+
+            fig_country.update_xaxes(
+
+                showgrid=True,
+
+                gridcolor="rgba(255,255,255,0.08)",
+
+                zeroline=False,
+
+            )
+
+
+
+            fig_country.update_yaxes(
+
+                showgrid=False,
+
+                zeroline=False,
+
+            )
+
+
+
+            st.plotly_chart(
+
+                fig_country,
+
+                use_container_width=True,
+
+                key="dashboard_country_chart",
+
+            )
+
+
+
+        # -------------------------------
+
+        # Historical churn distribution
+
+        # -------------------------------
+
+        with right:
+
+            st.subheader("Historical churn distribution")
+
+
+
+            churn_counts = (
+
+                customer_data["churn_status"]
+
+                .value_counts()
+
+                .reindex(
+
+                    [
+
+                        "Churned",
+
+                        "Not recorded as churned",
+
+                        "Unknown",
+
+                    ],
+
+                    fill_value=0,
+
+                )
+
+                .rename_axis("Status")
+
+                .reset_index(name="Customers")
+
+            )
+
+
+
+            churn_counts = churn_counts[
+
+                churn_counts["Customers"] > 0
+
+            ]
+
+
+
+            fig_churn = px.pie(
+
+                churn_counts,
+
+                names="Status",
+
+                values="Customers",
+
+                hole=0.58,
+
+                title="Distribution of existing churn labels",
+
+                template="netflix_dark",
+
+                color="Status",
+
+                color_discrete_map={
+
+                    "Churned": NETFLIX_RED,
+
+                    "Not recorded as churned": "#777777",
+
+                    "Unknown": NETFLIX_DARK_RED,
+
+                },
+
+            )
+
+
+
+            fig_churn.update_traces(
+
+                textposition="inside",
+
+                textinfo="percent",
+
+                hovertemplate=(
+
+                    "<b>%{label}</b><br>"
+
+                    "Customers: %{value:,}<br>"
+
+                    "Share: %{percent}"
+
+                    "<extra></extra>"
+
+                ),
+
+            )
+
+
+
+            fig_churn.update_layout(
+
+                paper_bgcolor="rgba(0,0,0,0)",
+
+                plot_bgcolor="rgba(12,8,9,0.95)",
+
+                font=dict(color=NETFLIX_WHITE, size=12),
+
+                title_font=dict(color=NETFLIX_WHITE, size=16),
+
+                margin=dict(l=10, r=10, t=65, b=25),
+
+                legend=dict(
+
+                    orientation="h",
+
+                    yanchor="top",
+
+                    y=-0.08,
+
+                    xanchor="center",
+
+                    x=0.5,
+
+                    font=dict(color=NETFLIX_WHITE, size=10),
+
+                ),
+
+            )
+
+
+
+            st.plotly_chart(
+
+                fig_churn,
+
+                use_container_width=True,
+
+                key="dashboard_churn_chart",
+
+            )
+
+
+
+        st.divider()
+
+
+
+        # -------------------------------
+
+        # Customer explorer
+
+        # -------------------------------
+
+        st.subheader("Customer explorer")
+
+        st.caption(
+
+            "Filter customer records and download the matching results."
+
         )
-        fig_churn.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(12,8,9,0.95)",
-            font=dict(color="#F5F5F1"),
-            title_font=dict(color="#F5F5F1"),
-            margin=dict(l=20, r=20, t=35, b=20),
-            legend=dict(font=dict(color="#F5F5F1")),
+
+
+
+        filter1, filter2 = st.columns(2, gap="medium")
+
+
+
+        country_options = sorted(
+
+            customer_data["country_display"].unique().tolist()
+
         )
-        st.plotly_chart(fig_churn, use_container_width=True)
 
 
-    st.subheader("Customer explorer")
-    country_options = sorted(
-        customer_data["country"].dropna().astype(str).unique()
-    )
-    selected_country = st.selectbox(
-        "Filter by country",
-        ["All countries"] + country_options,
-    )
 
-    filtered = customer_data.copy()
-    if selected_country != "All countries":
-        filtered = filtered[
-            filtered["country"].astype(str) == selected_country
+        with filter1:
+
+            selected_country = st.selectbox(
+
+                "Country",
+
+                options=["All countries"] + country_options,
+
+                key="dashboard_country_filter",
+
+            )
+
+
+
+        churn_options = [
+
+            "All statuses",
+
+            "Churned",
+
+            "Not recorded as churned",
+
+            "Unknown",
+
         ]
 
-    st.dataframe(
-        filtered.head(500),
-        use_container_width=True,
-        hide_index=True,
-    )
-    st.caption(
-        f"Showing up to 500 of {len(filtered):,} matching customers."
-    )
-    if dashboard_section == "Business KPIs":
+
+
+        with filter2:
+
+            selected_churn_status = st.selectbox(
+
+                "Historical churn status",
+
+                options=churn_options,
+
+                key="dashboard_churn_filter",
+
+            )
+
+
+
+        filtered = customer_data.copy()
+
+
+
+        if selected_country != "All countries":
+
+            filtered = filtered[
+
+                filtered["country_display"] == selected_country
+
+            ]
+
+
+
+        if selected_churn_status != "All statuses":
+
+            filtered = filtered[
+
+                filtered["churn_status"] == selected_churn_status
+
+            ]
+
+
+
+        # Keep internal helper columns out of the customer table.
+
+        display_columns = [
+
+            "customer_id",
+
+            "age",
+
+            "country_display",
+
+            "gender",
+
+            "churn_status",
+
+        ]
+
+
+
+        display_data = filtered[display_columns].rename(
+
+            columns={
+
+                "customer_id": "Customer ID",
+
+                "age": "Age",
+
+                "country_display": "Country",
+
+                "gender": "Gender",
+
+                "churn_status": "Historical churn status",
+
+            }
+
+        )
+
+
+
+        st.caption(
+
+            f"Matching customers: {len(display_data):,}"
+
+        )
+
+
+
+        st.dataframe(
+
+            display_data.head(500),
+
+            use_container_width=True,
+
+            hide_index=True,
+
+        )
+
+
+
+        st.download_button(
+
+            label="Download filtered customers (CSV)",
+
+            data=display_data.to_csv(index=False).encode("utf-8"),
+
+            file_name="netflix_filtered_customers.csv",
+
+            mime="text/csv",
+
+            key="download_dashboard_customers",
+
+        )
+
+
+
+        if len(display_data) > 500:
+
+            st.info(
+
+                "The table displays the first 500 matching records. "
+
+                "The CSV download includes all matching records."
+
+            )
+
+
+
+    elif dashboard_section == "Business KPIs":
+
         render_business_kpis(get_engine(DATABASE_URL))
 
+
+
     elif dashboard_section == "Churn Intelligence":
+
         render_churn_intelligence(get_engine(DATABASE_URL))
 
+
+
     elif dashboard_section == "Customer Segmentation":
+
         render_customer_segmentation()
-    # render_business_kpis(get_engine(DATABASE_URL))
-    # render_churn_intelligence(get_engine(DATABASE_URL))
-    # render_customer_segmentation()
+
+
 
 except Exception as exc:
-    st.error("Unable to load dashboard data from PostgreSQL.")
+
+    st.error("Unable to load this dashboard section.")
+
     st.caption(
-        "Check your DATABASE_URL, database connectivity, and table names."
+
+        "Check the terminal for the technical error. "
+
+        "Verify database connectivity and required table names."
+
     )
+
     st.exception(exc)
+
+
+
+
+

@@ -273,11 +273,19 @@ def render_churn_intelligence(engine):
 
     explain_customer(engine)
 
-    if not st.button("Calculate experimental churn risk"):
+
+
+    if not st.button(
+        "Calculate experimental churn risk",
+        key="calculate_experimental_churn_risk",
+        type="secondary",
+        use_container_width=False,
+    ):
         st.info(
             "Click the button to score the historical customer cohort."
         )
         return
+
 
     try:
         with st.spinner("Scoring customers..."):
