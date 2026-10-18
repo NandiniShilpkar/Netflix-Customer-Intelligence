@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = PROJECT_ROOT / "models" / "historical_random_forest.joblib"
+MODEL_PATH = PROJECT_ROOT / "models" / "historical_logistic_regression.joblib"
 
 CUTOFF_DATE = "2026-05-31"
 VIEWING_WINDOW_START = "2026-03-02"
@@ -21,7 +21,7 @@ VIEWING_WINDOW_START = "2026-03-02"
 
 @st.cache_resource
 def load_churn_model():
-    """Load the saved preprocessing and Random Forest pipeline."""
+    """Load the saved preprocessing and Logistic Regression pipeline."""
     if not MODEL_PATH.exists():
         raise FileNotFoundError(
             f"Model file not found: {MODEL_PATH}"
@@ -38,7 +38,7 @@ def build_current_customer_features(engine):
     viewing_start = VIEWING_WINDOW_START
 
     cohort_query = text("""
-        WITH latest_subscription AS (
+            WITH latest_subscription AS (
             SELECT DISTINCT ON (customer_id)
                 customer_id,
                 subscription_start_date,
@@ -46,7 +46,10 @@ def build_current_customer_features(engine):
                 cancellation_date
             FROM subscriptions
             WHERE subscription_start_date <= CAST(:cutoff AS DATE)
-            ORDER BY customer_id, subscription_start_date DESC
+            ORDER BY
+                customer_id,
+                subscription_start_date DESC,
+                subscription_id DESC
         )
         SELECT
             c.customer_id,
@@ -60,9 +63,18 @@ def build_current_customer_features(engine):
         FROM customers c
         JOIN latest_subscription ls
             ON c.customer_id = ls.customer_id
-        WHERE ls.cancellation_date IS NULL
-           OR ls.cancellation_date > CAST(:cutoff AS DATE)
+        JOIN churn_labels cl
+            ON cl.customer_id = c.customer_id
+        WHERE (
+            ls.cancellation_date IS NULL
+            OR ls.cancellation_date > CAST(:cutoff AS DATE)
+        )
+          AND (
+            cl.churned = FALSE
+            OR cl.churn_date > CAST(:cutoff AS DATE)
+        )
     """)
+
 
     with engine.connect() as conn:
         features = pd.read_sql(
@@ -349,7 +361,7 @@ def render_feature_importance():
 
         importance_df = pd.DataFrame({
             "Feature": preprocessor.get_feature_names_out(),
-            "Importance": classifier.feature_importances_,
+            "Importance": np.abs(classifier.coef_[0]),
         })
 
         importance_df["Feature"] = (
@@ -442,9 +454,12 @@ def explain_customer(engine):
         transformed = np.asarray(transformed, dtype=np.float64)
         feature_names = preprocessor.get_feature_names_out()
 
-        # TreeExplainer explains the fitted forest on the
-        # preprocessed feature representation.
-        explainer = shap.TreeExplainer(classifier)
+        # LinearExplainer explains the fitted Logistic Regression
+        # on the preprocessed feature representation.
+        explainer = shap.LinearExplainer(
+            classifier,
+            transformed,
+        )
         shap_values = explainer.shap_values(transformed)
 
         if isinstance(shap_values, list):

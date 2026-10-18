@@ -1,0 +1,191 @@
+{
+  "experiment": "rolling_chronological_churn_validation",
+  "random_state": 42,
+  "results": [
+    {
+      "split": "feb_to_mar",
+      "training_snapshots": [
+        "2026-02-28"
+      ],
+      "testing_snapshots": [
+        "2026-03-31"
+      ],
+      "model": "logistic_regression",
+      "training_rows": 6681,
+      "testing_rows": 6571,
+      "training_positive_cases": 206,
+      "testing_positive_cases": 218,
+      "precision": 0.03810504634397528,
+      "recall": 0.3394495412844037,
+      "f1": 0.06851851851851852,
+      "roc_auc": 0.5450310985057988,
+      "average_precision": 0.037361042977828426,
+      "confusion_matrix": [
+        [
+          4485,
+          1868
+        ],
+        [
+          144,
+          74
+        ]
+      ]
+    },
+    {
+      "split": "feb_to_mar",
+      "training_snapshots": [
+        "2026-02-28"
+      ],
+      "testing_snapshots": [
+        "2026-03-31"
+      ],
+      "model": "random_forest",
+      "training_rows": 6681,
+      "testing_rows": 6571,
+      "training_positive_cases": 206,
+      "testing_positive_cases": 218,
+      "precision": 0.05555555555555555,
+      "recall": 0.04128440366972477,
+      "f1": 0.04736842105263158,
+      "roc_auc": 0.5884845272839387,
+      "average_precision": 0.04531261587166792,
+      "confusion_matrix": [
+        [
+          6200,
+          153
+        ],
+        [
+          209,
+          9
+        ]
+      ]
+    },
+    {
+      "split": "feb_mar_to_apr",
+      "training_snapshots": [
+        "2026-02-28",
+        "2026-03-31"
+      ],
+      "testing_snapshots": [
+        "2026-04-30"
+      ],
+      "model": "logistic_regression",
+      "training_rows": 13252,
+      "testing_rows": 6427,
+      "training_positive_cases": 424,
+      "testing_positive_cases": 232,
+      "precision": 0.047574187470560525,
+      "recall": 0.4353448275862069,
+      "f1": 0.08577494692144373,
+      "roc_auc": 0.571990064289889,
+      "average_precision": 0.05258203550700141,
+      "confusion_matrix": [
+        [
+          4173,
+          2022
+        ],
+        [
+          131,
+          101
+        ]
+      ]
+    },
+    {
+      "split": "feb_mar_to_apr",
+      "training_snapshots": [
+        "2026-02-28",
+        "2026-03-31"
+      ],
+      "testing_snapshots": [
+        "2026-04-30"
+      ],
+      "model": "random_forest",
+      "training_rows": 13252,
+      "testing_rows": 6427,
+      "training_positive_cases": 424,
+      "testing_positive_cases": 232,
+      "precision": 0.052,
+      "recall": 0.05603448275862069,
+      "f1": 0.05394190871369295,
+      "roc_auc": 0.5873451893907768,
+      "average_precision": 0.05404976984742605,
+      "confusion_matrix": [
+        [
+          5958,
+          237
+        ],
+        [
+          219,
+          13
+        ]
+      ]
+    },
+    {
+      "split": "feb_mar_apr_to_may",
+      "training_snapshots": [
+        "2026-02-28",
+        "2026-03-31",
+        "2026-04-30"
+      ],
+      "testing_snapshots": [
+        "2026-05-31"
+      ],
+      "model": "logistic_regression",
+      "training_rows": 19679,
+      "testing_rows": 6260,
+      "training_positive_cases": 656,
+      "testing_positive_cases": 251,
+      "precision": 0.061291843470061294,
+      "recall": 0.5179282868525896,
+      "f1": 0.10961214165261383,
+      "roc_auc": 0.6277787833521962,
+      "average_precision": 0.0846481478010752,
+      "confusion_matrix": [
+        [
+          4018,
+          1991
+        ],
+        [
+          121,
+          130
+        ]
+      ]
+    },
+    {
+      "split": "feb_mar_apr_to_may",
+      "training_snapshots": [
+        "2026-02-28",
+        "2026-03-31",
+        "2026-04-30"
+      ],
+      "testing_snapshots": [
+        "2026-05-31"
+      ],
+      "model": "random_forest",
+      "training_rows": 19679,
+      "testing_rows": 6260,
+      "training_positive_cases": 656,
+      "testing_positive_cases": 251,
+      "precision": 0.1037037037037037,
+      "recall": 0.11155378486055777,
+      "f1": 0.10748560460652591,
+      "roc_auc": 0.6088868025982275,
+      "average_precision": 0.06687057693604699,
+      "confusion_matrix": [
+        [
+          5767,
+          242
+        ],
+        [
+          223,
+          28
+        ]
+      ]
+    }
+  ],
+  "caveats": [
+    "This is a chronological robustness check, not a production validation.",
+    "Probability thresholds have not been tuned.",
+    "The dataset is observational and does not establish causal drivers of churn."
+  ]
+}

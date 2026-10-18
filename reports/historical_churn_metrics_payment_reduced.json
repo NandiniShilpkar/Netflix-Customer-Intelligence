@@ -1,0 +1,60 @@
+{
+  "experiment": "historical_churn_chronological_evaluation",
+  "training_snapshots": [
+    "2026-02-28",
+    "2026-03-31"
+  ],
+  "testing_snapshots": [
+    "2026-05-31"
+  ],
+  "training_rows": 13252,
+  "testing_rows": 6260,
+  "training_positive_cases": 424,
+  "testing_positive_cases": 251,
+  "training_max_outcome_window_end": "2026-04-30",
+  "first_test_snapshot": "2026-05-31",
+  "random_state": 42,
+  "metrics": {
+    "logistic_regression": {
+      "precision": 0.0590513068731849,
+      "recall": 0.4860557768924303,
+      "f1": 0.1053085886922745,
+      "roc_auc": 0.605250822305718,
+      "average_precision": 0.09182934970720899,
+      "confusion_matrix": [
+        [
+          4065,
+          1944
+        ],
+        [
+          129,
+          122
+        ]
+      ]
+    },
+    "random_forest": {
+      "precision": 0.10975609756097561,
+      "recall": 0.10756972111553785,
+      "f1": 0.10865191146881288,
+      "roc_auc": 0.6040759577764827,
+      "average_precision": 0.06353682114473128,
+      "confusion_matrix": [
+        [
+          5790,
+          219
+        ],
+        [
+          224,
+          27
+        ]
+      ]
+    }
+  },
+  "caveats": [
+    "Labels are provisional until complete follow-up is verified.",
+    "Repeated customers across periods are allowed for an existing-customer forecasting use case.",
+    "Evaluation is not a test of generalization to entirely new customers.",
+    "Probability thresholds have not been tuned.",
+    "The dataset is observational and does not establish causal drivers of churn."
+  ]
+}
