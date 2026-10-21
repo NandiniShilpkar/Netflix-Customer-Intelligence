@@ -9,6 +9,111 @@ from src.dashboard.churn_intelligence import (
     load_churn_model,
 )
 
+def classify_question(question):
+    """
+    Convert a natural-language business question into a supported
+    analytics intent.
+    """
+
+    q = question.lower().strip()
+
+    if any(
+        phrase in q
+        for phrase in [
+            "revenue at risk",
+            "revenue risk",
+            "revenue could we lose",
+            "revenue might we lose",
+            "financial risk",
+        ]
+    ):
+        return "revenue_at_risk"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "who should we target",
+            "customers should we target",
+            "target for retention",
+            "retention target",
+            "retention targets",
+            "who needs retention",
+        ]
+    ):
+        return "retention_targets"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "what should we do",
+            "what should the business do",
+            "what action should",
+            "how should the business respond",
+            "recommended action",
+            "recommendations for high-risk",
+        ]
+    ):
+        return "retention_actions"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "why are customers leaving",
+            "why are customers churning",
+            "why is churn increasing",
+            "why churn is increasing",
+            "why is churn rising",
+            "what is causing churn",
+            "what causes churn",
+            "churn reasons",
+        ]
+    ):
+        return "churn_reasons"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "customer segment",
+            "customer segments",
+            "highest churn risk segment",
+            "highest churn risk segments",
+            "which segment has the highest churn",
+            "which segments have the highest churn",
+        ]
+    ):
+        return "churn_segments"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "subscription plan",
+            "which plan",
+            "which subscription",
+            "plan has the highest churn",
+            "plan with the highest churn",
+            "churn rate by plan",
+        ]
+    ):
+        return "churn_by_plan"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "highest churn",
+            "top churn",
+            "highest churn risk",
+            "high churn risk",
+            "most likely to churn",
+            "most likely customers to churn",
+            "who is most likely to churn",
+            "which customers are likely to churn",
+            "churning customers",
+        ]
+    ):
+        return "highest_churn"
+
+    return "unknown"
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ENV_PATH = PROJECT_ROOT / ".env"
 
@@ -369,26 +474,9 @@ def render_ai_analytics_copilot():
         return
 
     normalized_question = question.lower().strip()
+    intent = classify_question(question)
 
-    if (
-        "subscription plan" not in normalized_question
-        and "which plan" not in normalized_question
-        and "plan has the highest churn" not in normalized_question
-        and "plan with the highest churn" not in normalized_question
-        and "churn rate by plan" not in normalized_question
-        and "customer segment" not in normalized_question
-        and "customer segments" not in normalized_question
-        and "segment has the highest churn" not in normalized_question
-        and "segments have the highest churn" not in normalized_question
-        and "highest churn risk segment" not in normalized_question
-        and "highest churn risk segments" not in normalized_question
-        and (
-            "highest churn" in normalized_question
-            or "top churn" in normalized_question
-            or "high churn risk" in normalized_question
-            or "churning" in normalized_question
-        )
-    ):
+    if intent == "highest_churn":
         st.subheader("Highest Churn-Risk Customers")
 
         with st.spinner("Analyzing customer churn risk..."):
@@ -448,14 +536,7 @@ def render_ai_analytics_copilot():
             "used by the Churn Intelligence dashboard."
         )
 
-    elif (
-        "why is churn increasing" in normalized_question
-        or "why churn is increasing" in normalized_question
-        or "why is churn rising" in normalized_question
-        or "why churn is rising" in normalized_question
-        or "what is causing churn" in normalized_question
-        or "what causes churn" in normalized_question
-    ):
+    elif intent == "churn_reasons":
         st.subheader("Why Is Churn Increasing?")
 
         with st.spinner("Analyzing churn trends and customer churn reasons..."):
@@ -522,14 +603,7 @@ def render_ai_analytics_copilot():
             "patterns and does not establish causal relationships."
         )
 
-    elif (
-        "customer segment" in normalized_question
-        or "customer segments" in normalized_question
-        or "segments have the highest churn" in normalized_question
-        or "segment has the highest churn" in normalized_question
-        or "highest churn risk segment" in normalized_question
-        or "highest churn risk segments" in normalized_question
-    ):
+    elif intent == "churn_segments":
         st.subheader("Churn Risk by Customer Segment")
         with st.spinner("Analyzing customer churn-risk segments..."):
             result = get_churn_risk_segments()
@@ -551,17 +625,7 @@ def render_ai_analytics_copilot():
             "and High Risk (>60%)."
         )
 
-    elif (
-        "what should the business do" in normalized_question
-        or "what should we do" in normalized_question
-        or "what action should" in normalized_question
-        or "how should the business respond" in normalized_question
-        or "how should we respond" in normalized_question
-        or "retention action" in normalized_question
-        or "retention actions" in normalized_question
-        or "high-risk customers" in normalized_question
-        or "high risk customers" in normalized_question
-    ):
+    if intent == "retention_actions":
         st.subheader("Recommended Actions for High-Risk Customers")
 
         with st.spinner("Analyzing high-risk customers and recommended retention actions..."):
@@ -591,12 +655,7 @@ def render_ai_analytics_copilot():
             "recommendations and do not establish causal relationships."
         )
 
-    elif (
-        "how much revenue is at risk" in normalized_question
-        or "what is the revenue at risk" in normalized_question
-        or "revenue at risk" in normalized_question
-        or "revenue risk" in normalized_question
-    ):
+    if intent == "revenue_at_risk":
         st.subheader("Revenue at Risk")
 
         with st.spinner("Calculating revenue exposure from high-risk customers..."):
@@ -639,14 +698,7 @@ def render_ai_analytics_copilot():
             "It is an exposure metric, not a forecast of guaranteed revenue loss."
         )
 
-    elif (
-        "top 20 customers to target" in normalized_question
-        or "top customers to target" in normalized_question
-        or "customers to target for retention" in normalized_question
-        or "target for retention" in normalized_question
-        or "retention targets" in normalized_question
-        or "who should we target" in normalized_question
-    ):
+    if intent == "retention_targets":
         st.subheader("Top Customers to Target for Retention")
 
         with st.spinner("Prioritizing customers for retention..."):
@@ -683,13 +735,7 @@ def render_ai_analytics_copilot():
             "It is a decision-support score, not a causal measure."
         )
 
-    elif (
-        "subscription plan" in normalized_question
-        or "which plan" in normalized_question
-        or "plan has the highest churn" in normalized_question
-        or "plan with the highest churn" in normalized_question
-        or "churn rate by plan" in normalized_question
-    ):
+    elif intent == "churn_by_plan":
         st.subheader("Churn Rate by Subscription Plan")
 
         with st.spinner("Analyzing churn by subscription plan..."):
