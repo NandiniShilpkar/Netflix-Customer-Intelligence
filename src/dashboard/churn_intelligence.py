@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = PROJECT_ROOT / "models" / "historical_logistic_regression.joblib"
+MODEL_PATH = PROJECT_ROOT / "models" / "historical_random_forest_leaf20.joblib"
 
 CUTOFF_DATE = "2026-05-31"
 VIEWING_WINDOW_START = "2026-03-02"
@@ -21,7 +21,7 @@ VIEWING_WINDOW_START = "2026-03-02"
 
 @st.cache_resource
 def load_churn_model():
-    """Load the saved preprocessing and Logistic Regression pipeline."""
+    """Load the saved preprocessing and Random Forest pipeline."""
     if not MODEL_PATH.exists():
         raise FileNotFoundError(
             f"Model file not found: {MODEL_PATH}"
@@ -361,7 +361,7 @@ def render_feature_importance():
 
         importance_df = pd.DataFrame({
             "Feature": preprocessor.get_feature_names_out(),
-            "Importance": np.abs(classifier.coef_[0]),
+            "Importance": classifier.feature_importances_,
         })
 
         importance_df["Feature"] = (
@@ -454,12 +454,9 @@ def explain_customer(engine):
         transformed = np.asarray(transformed, dtype=np.float64)
         feature_names = preprocessor.get_feature_names_out()
 
-        # LinearExplainer explains the fitted Logistic Regression
+        # TreeExplainer explains the fitted Random Forest
         # on the preprocessed feature representation.
-        explainer = shap.LinearExplainer(
-            classifier,
-            transformed,
-        )
+        explainer = shap.TreeExplainer(classifier)
         shap_values = explainer.shap_values(transformed)
 
         if isinstance(shap_values, list):

@@ -1,0 +1,18 @@
+{
+  "model_type": "RandomForestClassifier",
+  "min_samples_leaf": 20,
+  "n_estimators": 300,
+  "class_weight": "balanced",
+  "random_state": 42,
+  "training_rows": 32709,
+  "positive_rows": 1109,
+  "negative_rows": 31600,
+  "training_snapshots": [
+    "2026-01-31",
+    "2026-02-28",
+    "2026-03-31",
+    "2026-04-30",
+    "2026-05-31"
+  ],
+  "target": "churn_next_30_days"
+}
