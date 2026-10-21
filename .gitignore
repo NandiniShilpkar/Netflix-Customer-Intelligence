@@ -272,4 +272,5 @@ src/dashboard/churn_intelligence.py.bak
 backups/
 
 # Local segmentation experiment outputs
+reports/segmentation_experiment/src/dashboard/ai_analytics_copilot_backup.py
 reports/segmentation_experiment/
