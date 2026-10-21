@@ -22,6 +22,7 @@ from src.dashboard.business_kpis import render_business_kpis
 from src.dashboard.churn_intelligence import render_churn_intelligence
 
 from src.dashboard.customer_segmentation import render_customer_segmentation
+from src.dashboard.ai_analytics_copilot import render_ai_analytics_copilot
 
 
 
@@ -898,6 +899,7 @@ menu_items = [
     ("Churn Intelligence", "👥"),
 
     ("Customer Segmentation", "📈"),
+    ("AI Analytics Copilot", "🤖"),
 
 ]
 
@@ -1687,6 +1689,11 @@ try:
     elif dashboard_section == "Customer Segmentation":
 
         render_customer_segmentation()
+
+
+    elif dashboard_section == "AI Analytics Copilot":
+
+        render_ai_analytics_copilot()
 
 
 
