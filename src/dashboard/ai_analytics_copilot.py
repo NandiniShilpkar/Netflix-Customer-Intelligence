@@ -16,6 +16,46 @@ from src.dashboard.customer_decision_engine import (
 )
 
 def classify_question(question):
+    q = question.lower().strip()
+
+    if any(
+        phrase in q
+        for phrase in [
+            "retention campaign",
+            "retention campaigns",
+            "retention strategy",
+            "retention strategies",
+            "retention success",
+            "retention rate",
+            "retention optimization",
+            "retention opportunity",
+            "retention plan",
+            "retention action",
+            "retention actions",
+            "revenue recovered",
+            "revenue recovery",
+            "recover revenue",
+            "revenue can we recover",
+            "how much revenue can we recover",
+            "customers to target",
+            "customer to target",
+            "who should we target",
+            "which customers should we target",
+            "target for a retention campaign",
+            "target for retention",
+            "campaign segments",
+            "campaign segment",
+            "save customers",
+            "save customer",
+            "customers should we save",
+            "who should we save",
+            "prevent churn",
+            "prevent customer churn",
+        ]
+    ):
+        return "retention_optimization"
+
+
     """
     Convert a natural-language business question into a supported
     analytics intent.
@@ -487,6 +527,63 @@ def build_analytics_context(intent):
     The deterministic analytics remain the source of truth.
     The LLM only explains the supplied results.
     """
+
+    if intent == "retention_optimization":
+        from src.dashboard.retention_optimization import (
+            build_retention_optimization,
+            calculate_recovery_scenarios,
+            build_campaign_segments,
+        )
+
+        engine = get_copilot_engine()
+        df = build_retention_optimization(engine)
+
+        if df.empty:
+            return "No retention optimization results are available."
+
+        target = df[df["decision"].isin(["Save Now", "Engage"])].copy()
+
+        monthly_risk = float(
+            target["monthly_revenue_at_risk"].sum()
+        )
+        annual_risk = monthly_risk * 12
+
+        campaigns = build_campaign_segments(df)
+        scenarios = calculate_recovery_scenarios(df)
+
+        top_customers = target.head(10)[
+            [
+                "customer_id",
+                "churn_risk",
+                "customer_value_score",
+                "retention_priority_score",
+                "decision",
+                "campaign_segment",
+                "recommended_action",
+                "monthly_revenue_at_risk",
+            ]
+        ]
+
+        return f"""
+Retention Action & Revenue Optimization
+
+Customers to target: {len(target)}
+Monthly revenue at risk: ${monthly_risk:,.2f}
+Annualized revenue at risk: ${annual_risk:,.2f}
+
+Campaign segments:
+{campaigns.to_string(index=False)}
+
+Recovery scenarios:
+{scenarios.to_string(index=False)}
+
+Priority customers:
+{top_customers.to_string(index=False)}
+
+Use only the analytics above.
+Do not invent customer IDs, numbers, campaign segments, or financial results.
+Revenue recovery figures are scenario estimates, not guarantees.
+"""
 
     if intent == "customer_intelligence":
         engine = get_copilot_engine()
