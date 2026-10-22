@@ -14,9 +14,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 SEGMENTS_PATH = (
     PROJECT_ROOT
-    / "reports"
-    / "segmentation_experiment"
-    / "behavior_focused_assignments.csv"
+    / "data"
+    / "features"
+    / "customer_segments.csv"
 )
 
 CHURN_PATH = (
