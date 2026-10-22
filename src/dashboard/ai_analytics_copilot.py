@@ -21,6 +21,26 @@ def classify_question(question):
     if any(
         phrase in q
         for phrase in [
+            "executive analytics",
+            "executive dashboard",
+            "executive summary",
+            "business overview",
+            "business health",
+            "overall business health",
+            "what needs attention",
+            "what should management focus on",
+            "what should leadership focus on",
+            "management priorities",
+            "leadership priorities",
+            "executive priorities",
+            "customer health overview",
+        ]
+    ):
+        return "executive_analytics"
+
+    if any(
+        phrase in q
+        for phrase in [
             "retention campaign",
             "retention campaigns",
             "retention strategy",
@@ -527,6 +547,40 @@ def build_analytics_context(intent):
     The deterministic analytics remain the source of truth.
     The LLM only explains the supplied results.
     """
+
+    if intent == "executive_analytics":
+        from src.dashboard.executive_analytics import build_executive_analytics
+
+        engine = get_copilot_engine()
+        data = build_executive_analytics(engine)
+
+        if not data:
+            return "No executive analytics results are available."
+
+        return f"""
+Executive Business Overview:
+
+Customers analyzed: {data['total_customers']:,}
+High-risk customers: {data['high_risk']:,}
+Average customer health score: {data['avg_health']:.1f}
+Average customer value score: {data['avg_value']:.1f}
+Average churn risk: {data['avg_churn']:.1f}%
+
+Save Now customers: {data['save_now']:,}
+Engage customers: {data['engage']:,}
+Customers to target: {data['target_customers']:,}
+High-value / high-risk customers: {data['high_value_high_risk']:,}
+
+Monthly revenue at risk: ${data['monthly_revenue_at_risk']:,.2f}
+Annualized revenue at risk: ${data['annual_revenue_at_risk']:,.2f}
+
+30% retention-success annual recovery scenario:
+${data['recovery_30']:,.2f}
+
+Answer using only these analytics.
+Do not invent numbers, customer IDs, financial results, or business outcomes.
+Revenue recovery is a scenario estimate, not a guarantee.
+"""
 
     if intent == "retention_optimization":
         from src.dashboard.retention_optimization import (

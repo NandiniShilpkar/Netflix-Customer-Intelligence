@@ -25,6 +25,7 @@ from src.dashboard.customer_segmentation import render_customer_segmentation
 from src.dashboard.ai_analytics_copilot import render_ai_analytics_copilot
 from src.dashboard.customer_decision_engine import render_customer_decision_engine
 from src.dashboard.retention_optimization import render_retention_optimization
+from src.dashboard.executive_analytics import render_executive_analytics
 
 
 
@@ -903,6 +904,7 @@ menu_items = [
     ("Customer Segmentation", "📈"),
     ("Customer Intelligence", "🎯"),
     ("Retention Optimization", "💰"),
+("Executive Analytics", "📊"),
     ("AI Analytics Copilot", "🤖"),
 
 ]
@@ -1705,6 +1707,11 @@ try:
         render_retention_optimization(get_engine(DATABASE_URL))
 
 
+
+    elif dashboard_section == "Executive Analytics":
+
+        render_executive_analytics(get_engine(DATABASE_URL))
+
     elif dashboard_section == "AI Analytics Copilot":
 
         render_ai_analytics_copilot()
@@ -1724,8 +1731,3 @@ except Exception as exc:
     )
 
     st.exception(exc)
-
-
-
-
-
