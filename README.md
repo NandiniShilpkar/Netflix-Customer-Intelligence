@@ -1344,9 +1344,9 @@ The system can:
 
 ### Project Documentation
 
-**[Project Report](docs/PROJECT_REPORT.md)**
+**[Project Report]**
 
-**[Project Showcase](docs/PROJECT_SHOWCASE.md)**
+**[Project Showcase](https://netflix-customer-intelligence-tsmnzjnygbsxbgtbfbvcnd.streamlit.app/)**
 
 ---
 
