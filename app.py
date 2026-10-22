@@ -23,6 +23,7 @@ from src.dashboard.churn_intelligence import render_churn_intelligence
 
 from src.dashboard.customer_segmentation import render_customer_segmentation
 from src.dashboard.ai_analytics_copilot import render_ai_analytics_copilot
+from src.dashboard.customer_decision_engine import render_customer_decision_engine
 
 
 
@@ -899,6 +900,7 @@ menu_items = [
     ("Churn Intelligence", "👥"),
 
     ("Customer Segmentation", "📈"),
+    ("Customer Intelligence", "🎯"),
     ("AI Analytics Copilot", "🤖"),
 
 ]
@@ -1689,6 +1691,11 @@ try:
     elif dashboard_section == "Customer Segmentation":
 
         render_customer_segmentation()
+
+
+    elif dashboard_section == "Customer Intelligence":
+
+        render_customer_decision_engine(get_engine(DATABASE_URL))
 
 
     elif dashboard_section == "AI Analytics Copilot":

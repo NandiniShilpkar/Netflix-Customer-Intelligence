@@ -11,6 +11,10 @@ from src.dashboard.churn_intelligence import (
     load_churn_model,
 )
 
+from src.dashboard.customer_decision_engine import (
+    build_customer_intelligence,
+)
+
 def classify_question(question):
     """
     Convert a natural-language business question into a supported
@@ -23,6 +27,8 @@ def classify_question(question):
         phrase in q
         for phrase in [
             "revenue at risk",
+            "how much revenue is at risk",
+            "how much revenue could we lose",
             "revenue risk",
             "revenue could we lose",
             "revenue might we lose",
@@ -30,6 +36,25 @@ def classify_question(question):
         ]
     ):
         return "revenue_at_risk"
+
+    if any(
+        phrase in q
+        for phrase in [
+            "customer health score",
+            "customer health",
+            "which customers should we save first",
+            "who should we save first",
+            "highest value high-risk customers",
+            "highest value customers at risk",
+            "highest business value",
+            "highest customer value",
+            "high-risk customers with the highest business value",
+            "high-risk customers with the highest customer value",
+            "customer decision engine",
+            "retention decision",
+        ]
+    ):
+        return "customer_intelligence"
 
     if any(
         phrase in q
@@ -462,6 +487,43 @@ def build_analytics_context(intent):
     The deterministic analytics remain the source of truth.
     The LLM only explains the supplied results.
     """
+
+    if intent == "customer_intelligence":
+        engine = get_copilot_engine()
+        df = build_customer_intelligence(engine)
+
+        if df.empty:
+            return "No customer intelligence results are available."
+
+        top = df.head(10)[
+            [
+                "customer_id",
+                "churn_risk",
+                "customer_health_score",
+                "customer_value_score",
+                "retention_priority_score",
+                "decision",
+                "recommended_action",
+            ]
+        ].copy()
+
+        return f"""
+Customer Intelligence Decision Engine:
+
+{top.to_string(index=False)}
+
+Decision definitions:
+- Save Now: highest-priority retention intervention.
+- Engage: proactive retention engagement.
+- Monitor: continue observation.
+- Low Priority: no immediate retention intervention.
+
+Important:
+- churn_risk is a model-based risk signal, not a guaranteed outcome.
+- health and value scores are deterministic business scores.
+- Preserve customer IDs and decision labels exactly as supplied.
+- Do not invent customers or numbers.
+"""
 
     if intent == "highest_churn":
         df = get_top_churn_customers(limit=10)
@@ -941,5 +1003,8 @@ def render_ai_analytics_copilot():
         - How much revenue is at risk?
         - What should the business do about high-risk customers?
         - Which customer segment has the highest churn?
+- Which customers should we save first?
+- Which high-risk customers have the highest business value?
+- What is the customer health score?
         """
     )
