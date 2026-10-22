@@ -416,6 +416,17 @@ def render_customer_decision_engine(engine):
         template="plotly_dark",
     )
 
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(12,8,9,0.95)",
+        font=dict(color="#F5F5F1"),
+        title_font=dict(color="#F5F5F1"),
+        hoverlabel=dict(
+            bgcolor="#1A1112",
+            font_color="#F5F5F1",
+        ),
+    )
+
     st.plotly_chart(
         fig,
         use_container_width=True,
