@@ -15,6 +15,10 @@ from src.dashboard.customer_decision_engine import (
     build_customer_intelligence,
 )
 
+from src.dashboard.customer_360 import (
+    get_customer_360_profile,
+)
+
 def classify_question(question):
     q = question.lower().strip()
 
@@ -140,6 +144,51 @@ def classify_question(question):
     """
 
     q = question.lower().strip()
+
+    # --------------------------------------------------------
+    # Customer 360 / individual customer profile
+    # --------------------------------------------------------
+    customer_id_match = None
+
+    import re
+
+    customer_id_match = re.search(
+        r"\bCUST\d{6}\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    customer_360_phrases = [
+        "customer 360",
+        "customer profile",
+        "individual customer",
+        "customer history",
+        "customer details",
+        "customer health",
+        "customer value",
+        "customer risk",
+        "profile of",
+        "show me customer",
+        "tell me about customer",
+    ]
+
+    if customer_id_match and any(
+        phrase in q for phrase in customer_360_phrases
+    ):
+        return f"customer_360:{customer_id_match.group(0).upper()}"
+
+    if customer_id_match and any(
+        phrase in q
+        for phrase in [
+            "churn risk of",
+            "health score of",
+            "value score of",
+            "retention priority of",
+            "decision for",
+            "recommended action for",
+        ]
+    ):
+        return f"customer_360:{customer_id_match.group(0).upper()}"
 
     if any(
         phrase in q
@@ -599,6 +648,61 @@ def get_revenue_at_risk():
     return summary, by_plan
 
 def build_analytics_context(intent):
+
+    # --------------------------------------------------------
+    # Customer 360 context
+    # --------------------------------------------------------
+    if intent.startswith("customer_360:"):
+        customer_id = intent.split(":", 1)[1].strip().upper()
+
+        engine = get_copilot_engine()
+
+        profile = get_customer_360_profile(
+            engine,
+            customer_id,
+        )
+
+        if not profile:
+            return (
+                f"No Customer 360 profile was found for "
+                f"{customer_id}."
+            )
+
+        return f"""
+Customer 360 Profile:
+
+Customer ID: {profile.get("customer_id")}
+Age: {profile.get("age")}
+City: {profile.get("city")}
+Country: {profile.get("country")}
+Preferred Language: {profile.get("preferred_language")}
+
+Plan: {profile.get("plan")}
+Monthly Price: {profile.get("monthly_price")}
+
+Churn Risk: {profile.get("churn_risk"):.2f}%
+Customer Health Score: {profile.get("health_score"):.2f}
+Customer Value Score: {profile.get("value_score"):.2f}
+Retention Priority Score: {profile.get("priority_score"):.2f}
+
+Decision: {profile.get("decision")}
+Recommended Action: {profile.get("recommended_action")}
+
+Monthly Revenue at Risk: {profile.get("monthly_revenue_at_risk")}
+Annual Revenue at Risk: {profile.get("annual_revenue_at_risk")}
+
+Watch Minutes: {profile.get("watch_minutes")}
+Viewing Sessions: {profile.get("viewing_sessions")}
+Support Tickets: {profile.get("support_tickets")}
+Unresolved Tickets: {profile.get("unresolved_tickets")}
+Feedback Count: {profile.get("feedback_count")}
+Average Rating: {profile.get("average_rating")}
+
+Use only the profile above.
+Do not invent customer information.
+Do not change the customer ID.
+"""
+
     """
     Build a compact, factual analytics context for the local LLM.
 
@@ -825,6 +929,130 @@ Important:
 - Preserve customer IDs and decision labels exactly as supplied.
 - Do not invent customers or numbers.
 """
+
+    # --------------------------------------------------------
+    # Customer 360 / individual customer profile
+    # --------------------------------------------------------
+    if intent.startswith("customer_360:"):
+        customer_id = intent.split(":", 1)[1].strip().upper()
+
+        engine = get_copilot_engine()
+        profile = get_customer_360_profile(
+            engine,
+            customer_id,
+        )
+
+        if not profile:
+            st.error(
+                f"No Customer 360 profile was found for {customer_id}."
+            )
+            return
+
+        st.subheader("Customer 360 Profile")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "Churn Risk",
+                f"{float(profile["churn_risk"]):.2f}%"
+            )
+
+        with col2:
+            st.metric(
+                "Health Score",
+                f"{float(profile["health_score"]):.2f}"
+            )
+
+        with col3:
+            st.metric(
+                "Customer Value",
+                f"{float(profile["value_score"]):.2f}"
+            )
+
+        with col4:
+            st.metric(
+                "Retention Priority",
+                f"{float(profile["priority_score"]):.2f}"
+            )
+
+        st.markdown("### Customer Overview")
+
+        overview = pd.DataFrame(
+            [
+                {
+                    "Customer ID": profile.get("customer_id"),
+                    "Age": profile.get("age"),
+                    "City": profile.get("city"),
+                    "Country": profile.get("country"),
+                    "Language": profile.get("preferred_language"),
+                    "Plan": profile.get("plan"),
+                    "Monthly Price": profile.get("monthly_price"),
+                }
+            ]
+        )
+
+        st.dataframe(
+            overview,
+            width="stretch",
+            hide_index=True,
+        )
+
+        st.markdown("### Retention Decision")
+
+        st.write(
+            f"**Decision:** {profile.get('decision')}"
+        )
+
+        st.write(
+            f"**Recommended Action:** "
+            f"{profile.get('recommended_action')}"
+        )
+
+        revenue_col1, revenue_col2 = st.columns(2)
+
+        with revenue_col1:
+            st.metric(
+                "Monthly Revenue at Risk",
+                f"${float(profile['monthly_revenue_at_risk']):,.2f}"
+            )
+
+        with revenue_col2:
+            st.metric(
+                "Annual Revenue at Risk",
+                f"${float(profile['annual_revenue_at_risk']):,.2f}"
+            )
+
+        st.markdown("### Engagement & Support")
+
+        engagement = pd.DataFrame(
+            [
+                {
+                    "Watch Minutes": profile.get("watch_minutes"),
+                    "Viewing Sessions": profile.get("viewing_sessions"),
+                    "Support Tickets": profile.get("support_tickets"),
+                    "Unresolved Tickets": profile.get("unresolved_tickets"),
+                    "Feedback Count": profile.get("feedback_count"),
+                    "Average Rating": profile.get("average_rating"),
+                }
+            ]
+        )
+
+        st.dataframe(
+            engagement,
+            width="stretch",
+            hide_index=True,
+        )
+
+        st.caption(
+            "Customer 360 combines churn risk, customer health, "
+            "customer value, retention priority, engagement, "
+            "support activity, and revenue exposure."
+        )
+
+        # Do not allow this Customer 360 request to fall through
+        # into unrelated Copilot intent branches.
+        return
 
     if intent == "highest_churn":
         df = get_top_churn_customers(limit=10)

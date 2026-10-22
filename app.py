@@ -28,6 +28,7 @@ from src.dashboard.retention_optimization import render_retention_optimization
 from src.dashboard.executive_analytics import render_executive_analytics
 from src.dashboard.production_ai_monitoring import render_production_ai_monitoring
 from src.dashboard.data_quality_mlops import render_data_quality_mlops
+from src.dashboard.customer_360 import render_customer_360
 
 
 
@@ -1704,6 +1705,10 @@ try:
     elif dashboard_section == "Customer Intelligence":
 
         render_customer_decision_engine(get_engine(DATABASE_URL))
+
+        st.divider()
+
+        render_customer_360(get_engine(DATABASE_URL))
 
 
     elif dashboard_section == "Retention Optimization":
