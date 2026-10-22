@@ -27,6 +27,7 @@ from src.dashboard.customer_decision_engine import render_customer_decision_engi
 from src.dashboard.retention_optimization import render_retention_optimization
 from src.dashboard.executive_analytics import render_executive_analytics
 from src.dashboard.production_ai_monitoring import render_production_ai_monitoring
+from src.dashboard.data_quality_mlops import render_data_quality_mlops
 
 
 
@@ -907,6 +908,7 @@ menu_items = [
     ("Retention Optimization", "💰"),
 ("Executive Analytics", "📊"),
 ("Production AI & Monitoring", "🧠"),
+("Data Quality & MLOps", "🔍"),
     ("AI Analytics Copilot", "🤖"),
 
 ]
@@ -1718,6 +1720,11 @@ try:
     elif dashboard_section == "Production AI & Monitoring":
 
         render_production_ai_monitoring(get_engine(DATABASE_URL))
+
+
+    elif dashboard_section == "Data Quality & MLOps":
+
+        render_data_quality_mlops(get_engine(DATABASE_URL))
 
     elif dashboard_section == "AI Analytics Copilot":
 

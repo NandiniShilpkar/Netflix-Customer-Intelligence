@@ -21,6 +21,30 @@ def classify_question(question):
     if any(
         phrase in q
         for phrase in [
+            "data quality",
+            "data quality score",
+            "missing values",
+            "missing features",
+            "missing feature values",
+            "feature completeness",
+            "data completeness",
+            "mlops",
+            "ml ops",
+            "explainability",
+            "model explanation",
+            "why is this customer high risk",
+            "why is this customer risky",
+            "churn drivers",
+            "churn driver",
+            "feature importance",
+            "risk explanation",
+        ]
+    ):
+        return "data_quality_mlops"
+
+    if any(
+        phrase in q
+        for phrase in [
             "production monitoring",
             "production readiness",
             "production health",
@@ -567,6 +591,54 @@ def build_analytics_context(intent):
     The deterministic analytics remain the source of truth.
     The LLM only explains the supplied results.
     """
+
+    if intent == "data_quality_mlops":
+        from src.dashboard.data_quality_mlops import (
+            build_data_quality_mlops,
+        )
+
+        engine = get_copilot_engine()
+        data = build_data_quality_mlops(engine)
+
+        if not data:
+            return "No data-quality or MLOps results are available."
+
+        checks = data["checks"]
+        passed = sum(checks.values())
+        total = len(checks)
+
+        top_features = data["explainability_df"].head(10)
+
+        if top_features.empty:
+            driver_text = "Feature importance is unavailable."
+        else:
+            driver_text = ", ".join(
+                top_features["Feature"].astype(str).tolist()
+            )
+
+        return f"""
+Data Quality & MLOps:
+
+Quality score: {data['quality_score']:.0f}%
+Missing feature values: {data['missing_cells']:,}
+Missing feature rate: {data['missing_rate']:.2f}%
+Feature completeness: {data['feature_completeness']:.1f}%
+Duplicate feature rows: {data['duplicate_rows']:,}
+Customer coverage: {data['customer_coverage']:.1f}%
+
+MLOps checks passed: {passed}/{total}
+
+Top global model features:
+{driver_text}
+
+Important:
+Customer-level explanation values are risk-contribution proxies,
+not causal explanations.
+
+Answer using only these analytics.
+Do not invent missing-value counts, features, customer IDs,
+causal explanations, or model results.
+"""
 
     if intent == "production_ai_monitoring":
         from src.dashboard.production_ai_monitoring import (
