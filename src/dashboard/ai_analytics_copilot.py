@@ -4,6 +4,8 @@ from pathlib import Path
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
+from src.services.llm_service import generate_business_answer
+
 from src.dashboard.churn_intelligence import (
     build_current_customer_features,
     load_churn_model,
@@ -453,6 +455,145 @@ def get_revenue_at_risk():
 
     return summary, by_plan
 
+def build_analytics_context(intent):
+    """
+    Build a compact, factual analytics context for the local LLM.
+
+    The deterministic analytics remain the source of truth.
+    The LLM only explains the supplied results.
+    """
+
+    if intent == "highest_churn":
+        df = get_top_churn_customers(limit=10)
+
+        columns = [
+            "customer_id",
+            "churn_risk",
+            "plan_id",
+            "days_since_last_viewing",
+        ]
+        compact = df[columns]
+
+        return f"""
+Top 10 customers by predicted churn risk:
+
+{compact.to_string(index=False)}
+
+Important:
+- The list above is the complete supplied list.
+- Preserve every customer ID in the list.
+- churn_risk is a model prediction, not a guaranteed churn outcome.
+"""
+
+    if intent == "retention_targets":
+        df = get_retention_targets(limit=5)
+
+        lines = []
+        for _, row in df.iterrows():
+            lines.append(
+                f"{row['customer_id']} - "
+                f"churn risk {row['churn_risk']:.2f} - "
+                f"{row['priority']}"
+            )
+
+        return f"""
+The analytics system selected these 5 retention targets:
+
+{chr(10).join(lines)}
+
+Important:
+- Preserve every customer ID exactly as supplied.
+- Preserve the priority exactly as supplied.
+- churn risk is a model prediction, not a guaranteed churn outcome.
+- Do not add or remove customers from this list.
+"""
+
+    if intent == "churn_by_plan":
+        df = get_churn_by_plan()
+
+        return f"""
+Churn by subscription plan:
+
+{df.to_string(index=False)}
+
+Important:
+- Use the plan values exactly as provided.
+- Do not claim that subscription plan causes churn.
+"""
+
+    if intent == "churn_segments":
+        df = get_churn_risk_segments()
+
+        return f"""
+Current churn-risk segments:
+
+{df.to_string(index=False)}
+
+Important:
+- These are model-based risk segments.
+- They describe predicted risk, not guaranteed outcomes.
+"""
+
+    if intent == "churn_reasons":
+        monthly, reasons = get_churn_trend_analysis()
+
+        return f"""
+Observed churn trend:
+
+{monthly.to_string(index=False)}
+
+Observed churn reasons:
+
+{reasons.to_string(index=False)}
+
+Important:
+- These are observed patterns.
+- Do not claim that these patterns prove causation.
+"""
+
+    if intent == "revenue_at_risk":
+        summary, by_plan = get_revenue_at_risk()
+
+        return f"""
+Revenue at risk:
+
+High-risk customers: {summary["high_risk_customers"]}
+Monthly revenue at risk: {summary["monthly_revenue_at_risk"]:.2f}
+Annualized revenue at risk: {summary["annualized_revenue_at_risk"]:.2f}
+
+Revenue at risk by plan:
+
+{by_plan.to_string(index=False)}
+
+Important:
+- Revenue at risk represents subscription revenue associated with high-risk customers.
+- It is not guaranteed revenue loss.
+- Use the plan values exactly as provided.
+"""
+
+    if intent == "retention_actions":
+        df = get_high_risk_recommendations(limit=10)
+
+        columns = [
+            "customer_id",
+            "churn_risk",
+            "recommendation",
+        ]
+
+        compact = df[columns]
+
+        return f"""
+High-risk customer retention recommendations:
+
+{compact.to_string(index=False)}
+
+Important:
+- Preserve every customer ID and recommendation exactly as supplied.
+- These are suggested actions based on observed customer signals.
+- They are not guaranteed outcomes.
+"""
+
+    return "No supported analytics context is available for this question."
 
 def render_ai_analytics_copilot():
     st.title("AI Analytics Copilot")
@@ -475,6 +616,25 @@ def render_ai_analytics_copilot():
 
     normalized_question = question.lower().strip()
     intent = classify_question(question)
+    if intent != "unknown":
+        try:
+           analytics_context = build_analytics_context(intent)
+
+           with st.spinner("Analyzing your question..."):
+            ai_answer = generate_business_answer(
+                question,
+                analytics_context,
+            )
+
+            st.markdown("### AI Business Analysis")
+            st.markdown(ai_answer)
+
+        except Exception as exc:
+           st.warning(
+                 "The local AI explanation is temporarily unavailable. "
+                 "Showing the underlying analytics instead."
+           )
+           st.caption(f"AI service: {str(exc)}")
 
     if intent == "highest_churn":
         st.subheader("Highest Churn-Risk Customers")
@@ -762,7 +922,24 @@ def render_ai_analytics_copilot():
         )
 
     else:
-        st.info(
-            "I can currently answer questions about the highest churn-risk "
-            "customers and churn by subscription plan."
-        )
+      st.info(
+        "I can answer business questions about churn, retention, "
+        "customers, subscription plans, customer segments, "
+        "and revenue at risk."
+    )
+
+    st.write(
+        "Try questions such as:"
+    )
+
+    st.markdown(
+        """
+        - Which customers are most likely to churn?
+        - Which customers should we target for retention?
+        - Which subscription plan has the highest churn?
+        - Why are customers leaving?
+        - How much revenue is at risk?
+        - What should the business do about high-risk customers?
+        - Which customer segment has the highest churn?
+        """
+    )
