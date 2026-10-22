@@ -64,7 +64,7 @@ def _get_customer_history(engine, customer_id):
                 customer_id,
                 SUM(
                     COALESCE(
-                        watch_minutes,
+                        watch_duration_minutes,
                         0
                     )
                 ) AS watch_minutes,
