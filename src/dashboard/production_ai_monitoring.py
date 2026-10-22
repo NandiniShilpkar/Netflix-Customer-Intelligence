@@ -31,7 +31,7 @@ def _check_ollama():
             return {
                 "status": "Unavailable",
                 "model": OLLAMA_MODEL,
-                "details": f"HTTP {response.status_code}",
+                "details": "Local AI service is not available in this environment.",
             }
 
         models = response.json().get("models", [])
@@ -45,23 +45,32 @@ def _check_ollama():
             for name in model_names
         )
 
-        return {
-            "status": "Healthy",
-            "model": OLLAMA_MODEL if model_available else "Not installed",
-            "details": (
-                "Local LLM service is responding."
-                if model_available
-                else "Ollama is running but the configured model was not found."
-            ),
-        }
+        if model_available:
+            return {
+                "status": "Healthy",
+                "model": OLLAMA_MODEL,
+                "details": "Local LLM service is responding.",
+            }
 
-    except Exception as exc:
         return {
             "status": "Unavailable",
             "model": OLLAMA_MODEL,
-            "details": str(exc)[:200],
+            "details": "Ollama is running but the configured model is not installed.",
         }
 
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        return {
+            "status": "Unavailable",
+            "model": OLLAMA_MODEL,
+            "details": "Local AI is unavailable in this deployment environment.",
+        }
+
+    except (requests.exceptions.RequestException, ValueError):
+        return {
+            "status": "Unavailable",
+            "model": OLLAMA_MODEL,
+            "details": "Local AI service could not be reached.",
+        }
 
 def _model_health():
     model = load_churn_model()
