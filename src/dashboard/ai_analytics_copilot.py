@@ -37,7 +37,17 @@ def classify_question(question):
             "churn drivers",
             "churn driver",
             "feature importance",
+            "features drive churn",
+            "feature drives churn",
+            "top churn features",
+            "top churn drivers",
+            "what drives churn",
             "risk explanation",
+            "explain this customer",
+            "explain customer risk",
+            "customer risk explanation",
+            "why is this customer high risk",
+            "why is this customer risky",
         ]
     ):
         return "data_quality_mlops"
@@ -58,6 +68,10 @@ def classify_question(question):
             "feature quality",
             "prediction coverage",
             "production ai",
+            "production ready",
+            "production readiness",
+            "ready for production",
+            "is the model production ready",
         ]
     ):
         return "production_ai_monitoring"

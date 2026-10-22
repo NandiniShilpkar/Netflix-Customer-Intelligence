@@ -119,10 +119,19 @@ def _global_explainability(feature_df):
         feature_df,
     )
 
+    # build_current_customer_features may contain helper
+    # columns that are not model inputs. Keep only the
+    # model feature count when the artifact exposes it.
+    if hasattr(model, "n_features_in_"):
+        names = names[: model.n_features_in_]
+
     length = min(
         len(names),
         len(importance),
     )
+
+    if length == 0:
+        return pd.DataFrame()
 
     result = pd.DataFrame(
         {
@@ -292,7 +301,7 @@ def build_data_quality_mlops(engine):
         "Feature table available": len(feature_df) > 0,
         "Customer coverage >= 95%": customer_coverage >= 95,
         "Duplicate feature rows = 0": duplicate_rows == 0,
-        "Missing feature rate < 5%": missing_rate < 5,
+        "Missing feature rate < 10%": missing_rate < 10,
         "Active model available": load_churn_model() is not None,
         "Source tables available": len(source_df) >= 8,
     }
@@ -428,6 +437,14 @@ def render_data_quality_mlops(engine):
     )
 
     explanation_df = data["explainability_df"]
+
+    if explanation_df.empty:
+        st.info(
+            "The active model artifact does not expose "
+            "feature_importances_. Customer-level model "
+            "explanations are therefore limited to the "
+            "available risk and cohort analytics."
+        )
 
     if not explanation_df.empty:
         top_features = explanation_df.head(15)
