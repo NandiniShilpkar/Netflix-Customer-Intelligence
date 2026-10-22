@@ -34,9 +34,9 @@ def _get_customer_history(engine, customer_id):
 
             s.subscription_id,
             s.plan_id,
-            s.start_date,
-            s.end_date,
-            s.status,
+            s.subscription_start_date,
+            s.subscription_end_date,
+            s.subscription_status,
 
             sp.plan_name,
             sp.monthly_price,
@@ -95,7 +95,7 @@ def _get_support_summary(engine, customer_id):
             COUNT(*) AS ticket_count,
             SUM(
                 CASE
-                    WHEN status NOT IN (
+                    WHEN ticket_status NOT IN (
                         'resolved',
                         'closed'
                     )
@@ -411,7 +411,7 @@ def get_customer_360_profile(
             row["monthly_revenue_at_risk"]
         ),
         "annual_revenue_at_risk": float(
-            row["annual_revenue_at_risk"]
+            row["annualized_revenue_at_risk"]
         ),
         "watch_minutes": watch_minutes,
         "viewing_sessions": viewing_sessions,
