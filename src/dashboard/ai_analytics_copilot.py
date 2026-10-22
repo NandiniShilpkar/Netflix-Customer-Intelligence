@@ -21,6 +21,26 @@ def classify_question(question):
     if any(
         phrase in q
         for phrase in [
+            "production monitoring",
+            "production readiness",
+            "production health",
+            "model monitoring",
+            "model health",
+            "model status",
+            "ai health",
+            "ai service health",
+            "ollama health",
+            "data quality",
+            "feature quality",
+            "prediction coverage",
+            "production ai",
+        ]
+    ):
+        return "production_ai_monitoring"
+
+    if any(
+        phrase in q
+        for phrase in [
             "executive analytics",
             "executive dashboard",
             "executive summary",
@@ -547,6 +567,50 @@ def build_analytics_context(intent):
     The deterministic analytics remain the source of truth.
     The LLM only explains the supplied results.
     """
+
+    if intent == "production_ai_monitoring":
+        from src.dashboard.production_ai_monitoring import (
+            build_production_monitoring,
+        )
+
+        engine = get_copilot_engine()
+        data = build_production_monitoring(engine)
+
+        if not data:
+            return "No production monitoring results are available."
+
+        checks = data["checks"]
+
+        passed = sum(checks.values())
+        total = len(checks)
+
+        return f"""
+Production AI Monitoring:
+
+Production readiness score: {data['readiness_score']:.0f}%
+Customers scored: {data['total_customers']:,}
+Prediction coverage: {data['prediction_coverage']:.1f}%
+
+Low-risk customers: {data['low_risk']:,}
+Medium-risk customers: {data['medium_risk']:,}
+High-risk customers: {data['high_risk']:,}
+
+Missing feature values: {data['missing_values']:,}
+Duplicate feature rows: {data['duplicate_rows']:,}
+
+Churn model status: {data['model_health']['status']}
+Model type: {data['model_health']['model_type']}
+Model features: {data['model_health']['features']}
+Model trees: {data['model_health']['trees']}
+
+Local AI service: {data['ollama_health']['status']}
+Configured AI model: {data['ollama_health']['model']}
+
+Validation checks passed: {passed}/{total}
+
+Answer using only these monitoring results.
+Do not invent metrics, model details, or production outcomes.
+"""
 
     if intent == "executive_analytics":
         from src.dashboard.executive_analytics import build_executive_analytics
