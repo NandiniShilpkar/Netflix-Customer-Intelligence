@@ -1,0 +1,37 @@
+{
+  "target": "Successful payments accumulated through 2026-05-31",
+  "target_definition": "Sum of successful payment amounts per customer",
+  "cutoff_date": "2026-05-31",
+  "best_model": "RandomForest",
+  "customer_count": 7990,
+  "train_rows": 6392,
+  "test_rows": 1598,
+  "target_mean": 179.03771339173966,
+  "target_median": 185.88,
+  "metrics": [
+    {
+      "model": "RandomForest",
+      "MAE": 15.22640358293101,
+      "RMSE": 31.83555939729248,
+      "R2": 0.9004414961608352
+    },
+    {
+      "model": "XGBoost",
+      "MAE": 15.450817507384565,
+      "RMSE": 32.30007688526457,
+      "R2": 0.8975149534482075
+    },
+    {
+      "model": "LinearRegression",
+      "MAE": 30.81814029513918,
+      "RMSE": 49.68237440782493,
+      "R2": 0.757529963836634
+    }
+  ],
+  "limitations": [
+    "This estimates historical accumulated customer value, not future lifetime revenue.",
+    "Random customer holdout evaluates unseen customers from the same historical population.",
+    "The target is affected by customer tenure and the available observation period.",
+    "No payment-derived predictors are used, avoiding direct target leakage."
+  ]
+}

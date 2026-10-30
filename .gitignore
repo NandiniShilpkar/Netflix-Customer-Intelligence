@@ -274,3 +274,25 @@ backups/
 # Local segmentation experiment outputs
 reports/segmentation_experiment/src/dashboard/ai_analytics_copilot_backup.py
 reports/segmentation_experiment/
+# Generated training artifacts
+catboost_info/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Individual-level customer predictions - keep private
+reports/retention_roi/catboost_b_ranked_customers_with_prices.csv
+reports/explainability/top_customer_shap_explanations.csv
+reports/clv/clv_test_predictions.csv
+reports/threshold_analysis/april_customer_predictions.csv
+
+# Local backup files
+sql/sql_business_questions_backup_before_sql_cleanup.sql
+sql/sql_business_questions_backup_q31_q33.sql
+src/models/train_historical_churn_model_backup.py

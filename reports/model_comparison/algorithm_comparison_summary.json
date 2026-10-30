@@ -1,0 +1,17 @@
+{
+    "training_dates": [
+        "2026-01-31",
+        "2026-02-28"
+    ],
+    "validation_dates": [
+        "2026-04-30",
+        "2026-05-31"
+    ],
+    "training_rows": 13451,
+    "training_positive_labels": 408,
+    "latest_training_outcome_window": "2026-03-30",
+    "results_file": "/workspaces/Netflix-Customer-Intelligence/reports/model_comparison/algorithm_temporal_comparison.csv",
+    "successful_runs": 20,
+    "failed_runs": 0,
+    "note": "May 31 was previously used during feature selection. Treat it as a secondary development evaluation, not an independent final test."
+}

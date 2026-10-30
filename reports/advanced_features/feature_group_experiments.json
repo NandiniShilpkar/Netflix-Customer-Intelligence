@@ -1,0 +1,50 @@
+[
+    {
+        "experiment": "A - Original",
+        "feature_count": 24,
+        "roc_auc": 0.611756999295214,
+        "pr_auc": 0.06620719691700609,
+        "precision": 0.10526315789473684,
+        "recall": 0.12749003984063745,
+        "f1": 0.11531531531531532,
+        "top10_precision": 0.08466453674121406,
+        "top10_recall": 0.21115537848605578,
+        "top10_churners_captured": 53
+    },
+    {
+        "experiment": "B - Original + Engagement",
+        "feature_count": 37,
+        "roc_auc": 0.6076588967809906,
+        "pr_auc": 0.06252616479948171,
+        "precision": 0.10232558139534884,
+        "recall": 0.08764940239043825,
+        "f1": 0.0944206008583691,
+        "top10_precision": 0.08626198083067092,
+        "top10_recall": 0.2151394422310757,
+        "top10_churners_captured": 54
+    },
+    {
+        "experiment": "C - Original + Payment + Support",
+        "feature_count": 44,
+        "roc_auc": 0.6092866013065396,
+        "pr_auc": 0.07077427553117847,
+        "precision": 0.11003236245954692,
+        "recall": 0.13545816733067728,
+        "f1": 0.12142857142857143,
+        "top10_precision": 0.08466453674121406,
+        "top10_recall": 0.21115537848605578,
+        "top10_churners_captured": 53
+    },
+    {
+        "experiment": "D - Original + All Advanced",
+        "feature_count": 57,
+        "roc_auc": 0.6089763097717301,
+        "pr_auc": 0.06826891254916359,
+        "precision": 0.10040160642570281,
+        "recall": 0.099601593625498,
+        "f1": 0.1,
+        "top10_precision": 0.0878594249201278,
+        "top10_recall": 0.21912350597609562,
+        "top10_churners_captured": 55
+    }
+]

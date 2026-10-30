@@ -64,5 +64,7 @@ websockets==17.2
 matplotlib==3.11.2
 seaborn==0.13.2
 nbformat==5.11.1
-jupyter
-ipykernel
+jupyter==1.1.1
+ipykernel==7.4.0
+sqlglot==30.26.0
+pytest==9.2.0

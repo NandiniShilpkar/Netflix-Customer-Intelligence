@@ -1,0 +1,10 @@
+{
+    "model":"historical_random_forest",
+    "snapshot_date":"2026-05-31",
+    "test_customers":6260,
+    "shap_sample_size":1000,
+    "customers_individually_explained":50,
+    "expected_model_output":0.4999537177,
+    "shap_version":"0.53.0",
+    "interpretation":"SHAP values explain model output contributions; they do not establish causation."
+}

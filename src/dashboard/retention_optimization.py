@@ -392,5 +392,320 @@ def render_retention_optimization(engine):
     )
 
 
+    render_historical_campaign_roi()
+
 # Compatibility alias for future modules.
 build_retention_optimization_context = build_retention_optimization
+
+
+# ============================================================
+# HISTORICAL CATBOOST RETENTION CAMPAIGN ROI
+# ============================================================
+
+def render_historical_campaign_roi():
+    st.divider()
+    st.header("Historical Retention Campaign ROI")
+    st.caption(
+        "Retrospective campaign simulation using the April 2026 "
+        "CatBoost B validation cohort."
+    )
+
+    prediction_path = (
+        PROJECT_ROOT
+        / "reports/retention_roi/catboost_b_ranked_customers_with_prices.csv"
+    )
+    sensitivity_path = (
+        PROJECT_ROOT
+        / "reports/retention_roi/retention_sensitivity_results.csv"
+    )
+
+    if not prediction_path.exists():
+        st.warning("Historical customer prediction report was not found.")
+        return
+
+    predictions = pd.read_csv(prediction_path)
+
+    required = {
+        "customer_id",
+        "actual_churn",
+        "predicted_churn_probability",
+        "monthly_price",
+    }
+
+    if not required.issubset(predictions.columns):
+        st.error("The historical prediction report is missing required columns.")
+        return
+
+    predictions["actual_churn"] = pd.to_numeric(
+        predictions["actual_churn"], errors="coerce"
+    ).fillna(0).astype(int)
+
+    predictions["monthly_price"] = pd.to_numeric(
+        predictions["monthly_price"], errors="coerce"
+    )
+
+    predictions = predictions.sort_values(
+        "predicted_churn_probability", ascending=False
+    ).reset_index(drop=True)
+
+    total_customers = len(predictions)
+    total_churners = int(predictions["actual_churn"].sum())
+
+    if total_customers == 0 or total_churners == 0:
+        st.warning("The historical cohort has no usable customer records.")
+        return
+
+    st.subheader("Campaign assumptions")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        capacity = st.slider(
+            "Contact capacity (%)",
+            min_value=5,
+            max_value=20,
+            value=10,
+            step=5,
+            key="historical_roi_capacity",
+        )
+
+    with c2:
+        retention_rate = st.slider(
+            "Assumed retention success (%)",
+            min_value=10,
+            max_value=50,
+            value=20,
+            step=5,
+            key="historical_roi_success",
+        )
+
+    with c3:
+        campaign_cost = st.number_input(
+            "Cost per contacted customer",
+            min_value=0.0,
+            value=1.0,
+            step=0.25,
+            key="historical_roi_cost",
+        )
+
+    with c4:
+        months_saved = st.selectbox(
+            "Revenue-saving period (months)",
+            options=[1, 3, 6],
+            index=1,
+            key="historical_roi_months",
+        )
+
+    contact_count = max(
+        1, round(total_customers * capacity / 100)
+    )
+
+    selected = predictions.head(contact_count).copy()
+
+    selected_churners = selected[
+        (selected["actual_churn"] == 1)
+        & selected["monthly_price"].notna()
+    ]
+
+    actual_churners_selected = len(selected_churners)
+
+    expected_retained = (
+        actual_churners_selected * retention_rate / 100
+    )
+
+    monthly_revenue_at_risk = selected_churners[
+        "monthly_price"
+    ].sum()
+
+    gross_revenue_saved = (
+        monthly_revenue_at_risk
+        * retention_rate / 100
+        * months_saved
+    )
+
+    total_campaign_cost = contact_count * campaign_cost
+    net_benefit = gross_revenue_saved - total_campaign_cost
+
+    roi = (
+        net_benefit / total_campaign_cost * 100
+        if total_campaign_cost > 0
+        else 0
+    )
+
+    precision = actual_churners_selected / contact_count
+    recall = actual_churners_selected / total_churners
+
+    st.divider()
+    st.subheader("Campaign performance")
+
+    m1, m2, m3, m4 = st.columns(4)
+
+    m1.metric("Customers Contacted", f"{contact_count:,}")
+    m2.metric("Historical Churners Selected", f"{actual_churners_selected:,}")
+    m3.metric("Expected Retained", f"{expected_retained:.1f}")
+    m4.metric("Campaign ROI", f"{roi:.2f}%")
+
+    m5, m6, m7, m8 = st.columns(4)
+
+    m5.metric("Campaign Cost", f"{total_campaign_cost:,.2f}")
+    m6.metric("Estimated Revenue Saved", f"{gross_revenue_saved:,.2f}")
+    m7.metric("Estimated Net Benefit", f"{net_benefit:,.2f}")
+    m8.metric("Churner Recall", f"{recall:.2%}")
+
+    st.caption(
+        f"Selected-group precision: {precision:.2%} | "
+        f"Overall historical churn rate: "
+        f"{predictions['actual_churn'].mean():.2%}"
+    )
+
+    if roi >= 0:
+        st.success("This scenario has positive estimated net benefit.")
+    else:
+        st.warning("This scenario has negative estimated net benefit.")
+
+    st.info(
+        "This is a retrospective what-if simulation. Actual historical "
+        "churn outcomes are used to estimate the opportunity, while the "
+        "retention success rate is an assumption. It does not measure "
+        "the causal effect of a real retention campaign."
+    )
+
+    st.subheader("Sensitivity Analysis")
+
+    if sensitivity_path.exists():
+        sensitivity = pd.read_csv(sensitivity_path)
+
+        available_costs = sorted(
+            sensitivity["campaign_cost_per_customer"].unique()
+        )
+        available_months = sorted(
+            sensitivity["revenue_saving_months"].unique()
+        )
+
+        h1, h2 = st.columns(2)
+
+        with h1:
+            heatmap_cost = st.selectbox(
+                "Sensitivity campaign cost",
+                available_costs,
+                index=available_costs.index(1.0)
+                if 1.0 in available_costs else 0,
+                key="historical_heatmap_cost",
+            )
+
+        with h2:
+            heatmap_months = st.selectbox(
+                "Sensitivity revenue period",
+                available_months,
+                index=available_months.index(3)
+                if 3 in available_months else 0,
+                key="historical_heatmap_months",
+            )
+
+        filtered = sensitivity[
+            (sensitivity["campaign_cost_per_customer"] == heatmap_cost)
+            & (sensitivity["revenue_saving_months"] == heatmap_months)
+        ]
+
+        pivot = filtered.pivot(
+            index="retention_success_rate",
+            columns="contact_capacity_pct",
+            values="estimated_roi_pct",
+        ) * 1.0
+
+        pivot.index = [f"{int(x * 100)}%" for x in pivot.index]
+
+        fig = px.imshow(
+            pivot,
+            text_auto=".1f",
+            aspect="auto",
+            color_continuous_scale="RdYlGn",
+            color_continuous_midpoint=0,
+            labels={
+                "x": "Contact capacity",
+                "y": "Retention success rate",
+                "color": "Estimated ROI (%)",
+            },
+            title="Campaign ROI Sensitivity Heatmap",
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        average_roi = (
+            sensitivity.groupby(
+                ["contact_capacity_pct", "retention_success_rate"],
+                as_index=False,
+            )["estimated_roi_pct"].mean()
+        )
+
+        average_roi["retention_success_rate"] *= 100
+
+        fig2 = px.line(
+            average_roi,
+            x="retention_success_rate",
+            y="estimated_roi_pct",
+            color="contact_capacity_pct",
+            markers=True,
+            title="Average ROI by Retention Success Rate",
+            labels={
+                "retention_success_rate": "Retention success (%)",
+                "estimated_roi_pct": "Average ROI (%)",
+                "contact_capacity_pct": "Contact capacity (%)",
+            },
+        )
+
+        fig2.add_hline(y=0, line_dash="dash")
+        st.plotly_chart(fig2, use_container_width=True)
+
+        profitable_count = int(sensitivity["profitable"].sum())
+        total_scenarios = len(sensitivity)
+
+        p1, p2 = st.columns(2)
+        p1.metric("Profitable Scenarios", f"{profitable_count:,}")
+        p2.metric(
+            "Unprofitable Scenarios",
+            f"{total_scenarios - profitable_count:,}",
+        )
+
+        st.download_button(
+            "Download Sensitivity Analysis CSV",
+            data=sensitivity.to_csv(index=False),
+            file_name="retention_sensitivity_analysis.csv",
+            mime="text/csv",
+            key="download_retention_sensitivity",
+        )
+    else:
+        st.warning("Sensitivity analysis report was not found.")
+
+    st.subheader("Priority Historical Campaign Customers")
+
+    display = selected[
+        [
+            "customer_id",
+            "predicted_churn_probability",
+            "actual_churn",
+            "monthly_price",
+            "risk_group",
+        ]
+    ].copy()
+
+    display["predicted_churn_probability"] *= 100
+
+    st.dataframe(
+        display.head(100).style.format(
+            {
+                "predicted_churn_probability": "{:.2f}%",
+                "monthly_price": "{:.2f}",
+            }
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.download_button(
+        "Download Historical Campaign Customer List",
+        data=selected.to_csv(index=False),
+        file_name="historical_catboost_retention_campaign.csv",
+        mime="text/csv",
+        key="download_historical_campaign",
+    )

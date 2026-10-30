@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 from src.services.llm_service import generate_business_answer
+from src.services.text_to_sql import generate_sql, execute_readonly_sql, generate_template_sql
 
 from src.dashboard.churn_intelligence import (
     build_current_customer_features,
@@ -129,8 +130,6 @@ def classify_question(question):
             "campaign segment",
             "save customers",
             "save customer",
-            "customers should we save",
-            "who should we save",
             "prevent churn",
             "prevent customer churn",
         ]
@@ -277,15 +276,19 @@ def classify_question(question):
     ):
         return "churn_segments"
 
+    # Churn by plan: only route here when the question explicitly
+    # asks about churn or churn rate.
     if any(
         phrase in q
         for phrase in [
-            "subscription plan",
-            "which plan",
-            "which subscription",
             "plan has the highest churn",
             "plan with the highest churn",
+            "which subscription plan has the highest churn",
+            "which plan has the highest churn rate",
             "churn rate by plan",
+            "churn by subscription plan",
+            "churned customers by plan",
+            "which plan has most churn",
         ]
     ):
         return "churn_by_plan"
@@ -1186,6 +1189,58 @@ Important:
 
     return "No supported analytics context is available for this question."
 
+def render_sql_result_visualization(result):
+    """Automatically visualize suitable SQL result data."""
+
+    if result.empty or len(result.columns) < 2:
+        return
+
+    numeric_columns = [
+        col for col in result.columns
+        if pd.api.types.is_numeric_dtype(result[col])
+    ]
+
+    if not numeric_columns:
+        return
+
+    value_column = numeric_columns[0]
+
+    label_columns = [
+        col for col in result.columns
+        if col != value_column
+    ]
+
+    if not label_columns:
+        return
+
+    label_column = label_columns[0]
+    chart_data = result[[label_column, value_column]].copy()
+
+    if pd.api.types.is_datetime64_any_dtype(chart_data[label_column]):
+        chart_data = chart_data.sort_values(label_column)
+        st.subheader("Trend Visualization")
+        st.line_chart(
+            chart_data,
+            x=label_column,
+            y=value_column,
+        )
+    elif (
+        pd.api.types.is_object_dtype(chart_data[label_column])
+        or pd.api.types.is_string_dtype(chart_data[label_column])
+        or pd.api.types.is_categorical_dtype(chart_data[label_column])
+    ):
+        chart_data = chart_data.sort_values(
+            value_column,
+            ascending=False,
+        )
+        st.subheader("Category Comparison")
+        st.bar_chart(
+            chart_data,
+            x=label_column,
+            y=value_column,
+        )
+
+
 def render_ai_analytics_copilot():
     st.title("AI Analytics Copilot")
 
@@ -1208,24 +1263,9 @@ def render_ai_analytics_copilot():
     normalized_question = question.lower().strip()
     intent = classify_question(question)
     if intent != "unknown":
-        try:
-           analytics_context = build_analytics_context(intent)
-
-           with st.spinner("Analyzing your question..."):
-            ai_answer = generate_business_answer(
-                question,
-                analytics_context,
-            )
-
-            st.markdown("### AI Business Analysis")
-            st.markdown(ai_answer)
-
-        except Exception as exc:
-           st.warning(
-                 "The local AI explanation is temporarily unavailable. "
-                 "Showing the underlying analytics instead."
-           )
-           st.caption(f"AI service: {str(exc)}")
+        st.caption(
+            "Showing validated business analytics and model-backed insights."
+        )
 
     if intent == "highest_churn":
         st.subheader("Highest Churn-Risk Customers")
@@ -1512,12 +1552,124 @@ def render_ai_analytics_copilot():
             "by subscription plan."
         )
 
-    else:
-      st.info(
-        "I can answer business questions about churn, retention, "
-        "customers, subscription plans, customer segments, "
-        "and revenue at risk."
-    )
+    if intent == "unknown":
+        st.subheader("AI SQL Analytics")
+
+        st.caption(
+            "Ask questions about your database in natural language. "
+            "The Copilot generates, validates, and executes read-only SQL."
+        )
+
+        try:
+            with st.spinner("Checking analytics templates and querying the database..."):
+
+                try:
+                    generated_sql = generate_template_sql(question)
+                    using_offline_template = True
+
+                except ValueError:
+                    generated_sql = generate_sql(question)
+                    using_offline_template = False
+
+                result = execute_readonly_sql(
+                    get_copilot_engine(),
+                    generated_sql,
+                )
+
+                sql_title = (
+                "View offline SQL template"
+                if using_offline_template
+                else "View generated SQL"
+            )
+
+            with st.expander(sql_title, expanded=False):
+                st.code(generated_sql, language="sql")
+
+            if using_offline_template:
+                st.success("Offline SQL template executed successfully.")
+                st.caption(
+                    "This result was generated using a validated "
+                    "predefined SQL analytics template."
+                )
+            else:
+                st.success("AI-generated SQL query executed successfully.")
+
+            st.metric("Rows returned", len(result))
+
+            if result.empty:
+                st.info("The query completed successfully but returned no records.")
+            else:
+                st.dataframe(
+                    result,
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                render_sql_result_visualization(result)
+
+            with st.expander("View generated SQL", expanded=False):
+                st.code(generated_sql, language="sql")
+
+            st.success("Query executed successfully.")
+
+            st.metric("Rows returned", len(result))
+
+            if result.empty:
+                st.info("The query completed successfully but returned no records.")
+            else:
+                st.dataframe(
+                    result,
+                    width="stretch",
+                    hide_index=True,
+                )
+                render_sql_result_visualization(result)
+
+        except Exception as exc:
+            error_message = str(exc)
+            error_type = type(exc).__name__
+
+            if error_type == "RateLimitError" or "insufficient_quota" in error_message:
+                st.caption(
+                    "Offline analytics mode: using validated SQL templates."
+                )
+
+                try:
+                    with st.spinner("Checking supported offline SQL templates..."):
+                        generated_sql = generate_template_sql(question)
+                        result = execute_readonly_sql(
+                            get_copilot_engine(),
+                            generated_sql,
+                        )
+
+                    with st.expander("View offline SQL query", expanded=False):
+                        st.code(generated_sql, language="sql")
+
+                    st.success("Offline SQL query executed successfully.")
+                    st.caption("Result generated using a predefined SQL template.")
+
+                    st.metric("Rows returned", len(result))
+                    st.dataframe(
+                        result,
+                        width="stretch",
+                        hide_index=True,
+                    )
+                    render_sql_result_visualization(result)
+
+                except ValueError:
+                    st.warning(
+                        "This question is not supported in offline mode yet. "
+                        "Try one of the suggested questions below."
+                    )
+                except Exception as fallback_exc:
+                    st.error("The offline SQL query could not be completed.")
+                    st.caption(
+                        f"{type(fallback_exc).__name__}: {fallback_exc}"
+                    )
+
+            else:
+                st.error("The SQL analytics request could not be completed.")
+                st.caption(f"{error_type}: {error_message}")
+
 
     st.write(
         "Try questions such as:"
