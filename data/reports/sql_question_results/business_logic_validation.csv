@@ -1,0 +1,39 @@
+﻿question_id,execution_status,result_rows,logic_audit_status,audit_observation
+Q01,PASS,21,VALIDATED,"The latest subscription is selected per customer using ROW_NUMBER with subscription_start_date and subscription_id ordering. The result covers 6,009 active customers across 21 normalized countries."
+Q02,PASS,267,VALIDATED WITH CAVEAT,"All 103,529 successful payments were mapped to subscriptions using customer ID and effective subscription date boundaries. The average is average payment amount, not average monthly revenue per customer."
+Q03,PASS,1,VALIDATED,"The churn_labels table contains 8,000 unique customer records: 1,991 churned and 6,009 non-churned. Overall churn rate is 24.89%."
+Q04,PASS,8,VALIDATED,"Acquisition channel analysis covers 8,000 unique customers across 8 channels. Distinct customer counts and churn-rate calculations were verified."
+Q05,PASS,3,WARNING,"Historical plan memberships may count one customer under multiple plans. Interpret as historical membership, not exclusive current-plan population."
+Q06,PASS,10,VALIDATED,"All 66,422 viewing rows have matching content records. No NULL or unmatched content IDs were found."
+Q07,PASS,76,VALIDATED,"65,891 non-NULL completion values were found, ranging from 1 to 100. No out-of-range values or unmatched content records were found."
+Q08,PASS,12,VALIDATED,"The latest payment month is May 2026. The 12-month reporting window contains failed payments in all 12 months, from June 2025 through May 2026."
+Q09,PASS,6,VALIDATED,"All 4,592 Resolved/Closed tickets have resolution times. No negative resolution times were found."
+Q10,PASS,5,VALIDATED,"All 4,592 Resolved/Closed tickets have non-NULL satisfaction scores within the observed 1-5 range."
+Q11,PASS,7,VALIDATED,"Device labels normalized into standard categories. All 66,422 viewing rows have valid watch durations."
+Q12,PASS,3,WARNING,Feedback sentiment labels contain known intentional mislabelling. Treat sentiment averages cautiously.
+Q13,PASS,64,VALIDATED,"All 8,000 customers have unique IDs and valid registration dates. Eight acquisition channels were found."
+Q14,PASS,1,VALIDATED,"Latest-subscription ranking returns exactly 8,000 rows for 8,000 unique customers."
+Q15,PASS,120,VALIDATED,"Ticket aggregation validated: 6,120 tickets across 4,408 customers. Exactly 120 customers have more than three tickets; maximum is seven."
+Q16,PASS,3,VALIDATED,"There are 6,009 active subscription rows for 6,009 unique customers. No overlapping active subscriptions were found."
+Q17,PASS,4408,VALIDATED WITH CAVEAT,"ROW_NUMBER uses ticket_date DESC NULLS LAST and ticket_id as a tie-breaker. However, 61 tickets have missing dates and 30 customers have only undated tickets. Their selected ticket cannot be verified as the latest by date."
+Q18,PASS,89,VALIDATED,Calendar-month diagnostic found no missing registration months in this dataset. The three-row moving average has consecutive observed calendar months for this dataset.
+Q19,PASS,2224,VALIDATED,Corrected to compare the latest viewing month with the exact previous calendar month. Nonconsecutive observed months are no longer treated as consecutive.
+Q20,PASS,267,VALIDATED,"Corrected to exclude customers whose 1-, 3- or 6-month retention milestone falls after the observation cutoff."
+Q21,PASS,5,VALIDATED,"All 8,000 customers have country mappings across 21 normalized categories. Country churn rates and DENSE_RANK ordering were verified."
+Q22,PASS,103529,VALIDATED,"All 103,529 successful payments have unique payment IDs, valid customer IDs, payment dates and amounts. No negative amounts or duplicate ordering keys."
+Q23,PASS,1447,VALIDATED,"The query checks consecutive calendar months using month-date comparisons. It identified 1,447 declining three-month windows across 1,205 customers."
+Q24,PASS,12,VALIDATED WITH CAVEAT,"Historical activity is reconstructed using subscription start and cancellation dates with exclusive end boundaries. All 1,991 churn dates match cancellation dates. Forty-two records with cancellation dates before subscription start are excluded from the denominator."
+Q25,PASS,8,VALIDATED,"Latest-subscription ranking returns 8,000 customer records: 6,009 Active and 1,991 Cancelled. No latest Active record has a non-NULL end date."
+Q26,PASS,8000,VALIDATED,"Lifetime successful spend was calculated for all 8,000 customers. NTILE(4) produces four equal groups of 2,000 customers each."
+Q27,PASS,63,VALIDATED,"All 6,120 tickets have non-NULL, non-blank subcategories. Ranking returns exactly three subcategories for each of 21 countries, totaling 63 rows."
+Q28,PASS,16,WARNING,"Failed-payment risk is a rule-based proxy, not a trained ML churn probability."
+Q29,PASS,0,DATA LIMITATION,"No historical subscription price changes were found. Zero rows are an expected dataset limitation, not an execution failure."
+Q30,PASS,21,VALIDATED WITH CAVEAT,"All 8,000 customers are represented and all 1,991 churned customers have churn dates and reasons. Successful payments after churn were found for 339 churned customers; the CLV query correctly excludes payments after the churn date."
+Q31,PASS,50,VALIDATED WITH CAVEAT,"Numeric normalization checks passed: 6,009 customers scored, no NULL or out-of-range scores. Uses CURRENT_DATE (system date 2026-10-30) while latest viewing data is 2026-06-30. Score is a rule-based risk proxy."
+Q32,PASS,105,VALIDATED,"The most recent completed quarter is January-March 2026. It contains 586 tickets across 547 customers. All have subcategories, and the ranking returns exactly five complaints for each of 21 countries."
+Q33,PASS,498,VALIDATED,Corrected to restrict viewing activity to dates on or before churn_date before calculating last engagement.
+Q34,PASS,6,VALIDATED,Corrected to distinguish migration events from unique customers and calculate churn rate using distinct customers.
+Q35,PASS,6,WARNING,Weekly buckets are assigned to the month containing their Monday start date. Some weeks cross month boundaries; document this convention when interpreting WAU.
+Q36,PASS,23,WARNING,Negative sentiment labels are imperfect. Combining them with low ratings helps but does not eliminate label noise.
+Q37,PASS,8000,VALIDATED WITH CAVEAT,"Score validation passed for 8,000 customers: no NULL or out-of-range scores and all normalized components are between 0 and 1. Uses CURRENT_DATE (2026-10-30) while latest viewing data is 2026-06-30. Feature weights are heuristic and predictive performance has not yet been established."
+Q38,PASS,3,VALIDATED WITH CAVEAT,"All 8,000 customers receive exactly one plan assignment, including all 1,991 churned customers at their churn dates. No tied latest subscription start dates were found. Forty-two customers have churn dates before the start of another subscription record."
